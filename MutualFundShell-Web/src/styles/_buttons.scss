@@ -1,0 +1,70 @@
+@use 'variables' as *;
+@use 'mixins' as *;
+
+.btn {
+  @include btn-base;
+
+  &-primary {
+    background: $primary;
+    color: #F3EEDF;
+    &:hover:not(:disabled) { background: $primary-hover; }
+  }
+
+  &-accent {
+    background: $accent;
+    color: #fff;
+    &:hover:not(:disabled) { background: #245a4f; }
+  }
+
+  &-gold {
+    background: transparent;
+    color: $primary;
+    border: 1.5px solid $gold;
+    &:hover:not(:disabled) { background: rgba($gold, 0.14); }
+  }
+
+  &-danger {
+    background: $danger-light;
+    color: $danger;
+    border: 1px solid #f1948a;
+    &:hover:not(:disabled) { background: #fde8e6; }
+  }
+
+  &-warning {
+    background: $warning-light;
+    color: $warning-dark;
+    border: 1px solid #f9ca7a;
+  }
+
+  &-outline {
+    background: transparent;
+    color: $primary;
+    border: 1.5px solid $primary;
+    &:hover:not(:disabled) { background: rgba(31, 78, 121, 0.06); }
+  }
+
+  &-ghost {
+    background: transparent;
+    color: $text-secondary;
+    &:hover:not(:disabled) { background: $hover-bg; }
+  }
+
+  &-sm {
+    padding: 6px 14px;
+    font-size: $font-size-sm;
+    border-radius: 6px;
+  }
+
+  &-lg {
+    padding: 13px 28px;
+    font-size: $font-size-md;
+    width: 100%;
+  }
+
+  &-icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 8px;
+  }
+}

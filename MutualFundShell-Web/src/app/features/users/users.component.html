@@ -1,0 +1,122 @@
+<app-loading-spinner *ngIf="loading" message="Loading users..."></app-loading-spinner>
+
+<div class="wrap" *ngIf="!loading">
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">User & Family Management</span>
+      <h1 class="display">Users</h1>
+      <p class="sub">Manage accounts, roles, and permissions</p>
+    </div>
+  </div>
+
+  <div class="stat-strip">
+    <div class="stat-card"><span class="stat-label">Total</span><span class="stat-value num">{{ totalCount }}</span></div>
+    <div class="stat-card"><span class="stat-label">Approved</span><span class="stat-value num">{{ approvedCount }}</span></div>
+    <div class="stat-card"><span class="stat-label">Pending</span><span class="stat-value num">{{ pendingCount }}</span></div>
+    <div class="stat-card"><span class="stat-label">Rejected</span><span class="stat-value num">{{ rejectedCount }}</span></div>
+  </div>
+
+  <div class="filter-bar">
+    <input type="text" placeholder="Search name, email, PAN..." [formControl]="searchCtrl" />
+    <select [formControl]="roleFilter">
+      <option value="all">All Roles</option>
+      <option value="Admin">Admin</option>
+      <option value="Employee">Employee</option>
+      <option value="User">User</option>
+    </select>
+    <select [formControl]="statusFilter">
+      <option value="all">All Statuses</option>
+      <option value="Approved">Approved</option>
+      <option value="Pending">Pending</option>
+      <option value="Rejected">Rejected</option>
+    </select>
+    <button class="btn-ghost" (click)="clearFilters()">Clear</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>PAN</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Joined</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let u of filtered">
+          <td>{{ u.fullName }}</td>
+          <td class="muted-sm">{{ u.email }}</td>
+          <td class="num">{{ u.panNumber }}</td>
+          <td><span class="badge" [ngClass]="roleBadgeClass(u.roleName)">{{ u.roleName }}</span></td>
+          <td><span class="badge" [ngClass]="statusBadgeClass(u.statusName)">{{ u.statusName }}</span></td>
+          <td>{{ u.createdAt | date:'dd MMM yy' }}</td>
+          <td class="row-actions">
+            <ng-container *ngIf="u.statusName === 'Pending'">
+              <button class="icon-btn" title="Approve" (click)="approveUser(u)"><i class="fas fa-check"></i></button>
+              <button class="icon-btn" title="Reject" (click)="rejectUser(u)"><i class="fas fa-times"></i></button>
+            </ng-container>
+            <button class="icon-btn" title="Change role" (click)="openRoleModal(u)"><i class="fas fa-user-cog"></i></button>
+            <button class="icon-btn" title="Permissions" (click)="openPermModal(u)"><i class="fas fa-key"></i></button>
+            <button class="icon-btn" title="Deactivate" *ngIf="u.isActive" (click)="deactivateUser(u)"><i class="fas fa-ban"></i></button>
+          </td>
+        </tr>
+        <tr *ngIf="!filtered.length">
+          <td colspan="7" class="empty-row">No users match the current filters.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Role Modal ─────────────────────────────────────────────── -->
+<div class="modal-overlay" *ngIf="showRoleModal" (click)="closeRoleModal()">
+  <div class="modal" (click)="$event.stopPropagation()" *ngIf="selectedUser">
+    <div class="modal-header">
+      <h3 class="display">Change Role</h3>
+      <button class="icon-btn" (click)="closeRoleModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <p class="sub">{{ selectedUser.fullName }} — {{ selectedUser.email }}</p>
+      <div class="form-row">
+        <label>Role</label>
+        <select [(ngModel)]="selectedRoleName">
+          <option *ngFor="let r of roleOptions" [value]="r">{{ r }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" (click)="closeRoleModal()">Cancel</button>
+      <button class="btn-primary" (click)="saveRole()">Save Role</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Permissions Modal ──────────────────────────────────────── -->
+<div class="modal-overlay" *ngIf="showPermModal" (click)="closePermModal()">
+  <div class="modal" (click)="$event.stopPropagation()" *ngIf="selectedUser">
+    <div class="modal-header">
+      <h3 class="display">Permissions</h3>
+      <button class="icon-btn" (click)="closePermModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <p class="sub">{{ selectedUser.fullName }} — {{ selectedUser.email }}</p>
+      <div class="perm-list">
+        <label class="perm-row" *ngFor="let p of permissions">
+          <input type="checkbox" [checked]="hasPermission(p.code)" (change)="togglePermission(p.code)" [disabled]="permBusy" />
+          <span>
+            <strong>{{ p.name }}</strong>
+            <span class="muted-sm"> — {{ p.description }}</span>
+          </span>
+        </label>
+        <p class="empty-note" *ngIf="!permissions.length">No permissions defined.</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-primary" (click)="closePermModal()">Done</button>
+    </div>
+  </div>
+</div>

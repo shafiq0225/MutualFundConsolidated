@@ -1,0 +1,61 @@
+// src/app/shared/components/holiday-banner/holiday-banner.component.scss
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.hb-banner {
+  @include flex-start;
+  gap: 0.75rem;
+  background: $warning-light;
+  border: 1px solid rgba($warning, 0.3);
+  border-left: 4px solid $warning;
+  border-radius: $card-radius;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  box-shadow: $shadow-sm;
+  animation: slideDown 0.3s ease;
+
+  @include mobile {
+    padding: 0.65rem 0.85rem;
+    gap: 0.5rem;
+  }
+}
+
+.hb-icon {
+  font-size: $font-size-lg;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.hb-text {
+  flex: 1;
+  font-size: $font-size-sm;
+  color: $warning-dark;
+  line-height: 1.55;
+
+  @include mobile {
+    font-size: $font-size-xs;
+  }
+}
+
+.hb-close {
+  background: none;
+  border: none;
+  color: $text-muted;
+  font-size: $font-size-sm;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: $input-radius;
+  flex-shrink: 0;
+  transition: $transition-fast;
+  line-height: 1;
+
+  &:hover {
+    color: $danger;
+    background: $danger-light;
+  }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-8px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}

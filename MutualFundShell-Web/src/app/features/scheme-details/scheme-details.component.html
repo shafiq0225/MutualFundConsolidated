@@ -1,0 +1,174 @@
+<app-loading-spinner *ngIf="loading" message="Loading scheme details...">
+</app-loading-spinner>
+
+<!-- Lightweight skeleton placeholders to preserve layout while loading -->
+<div *ngIf="loading" class="skeleton-layout">
+    <div class="skeleton h-lg"></div>
+    <div class="skeleton h-md"></div>
+    <div class="skeleton-row">
+        <div class="skeleton h-sm"></div>
+        <div class="skeleton h-sm"></div>
+        <div class="skeleton h-sm"></div>
+    </div>
+</div>
+
+<div *ngIf="!loading && scheme" class="scheme-details">
+
+    <!-- ── Back Header ────────────────────────────────────────── -->
+    <div class="back-header">
+        <button class="back-btn" type="button" (click)="goBack()" aria-label="Go back to schemes list">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <div class="back-info">
+            <h2>{{ scheme.schemeName }}</h2>
+            <span class="back-sub">
+                {{ scheme.fundName }}
+                <span class="scheme-code-pill">{{ scheme.schemeCode }}</span>
+            </span>
+        </div>
+    </div>
+
+    <!-- ── Top section ───────────────────────────────────────── -->
+    <div class="top-grid">
+        <div class="nav-hero" [class.nav-hero--up]="scheme.isDailyUp" [class.nav-hero--down]="!scheme.isDailyUp">
+            <div class="nav-hero__main">
+                <div class="nav-hero__label">CURRENT NAV</div>
+                <div class="nav-hero__value" aria-live="polite">&#8377;{{ scheme.currentNAV | number:'1.4-4' }}</div>
+
+                <div class="nav-hero__change">
+                    <span class="change-pill" [class.change-pill--up]="scheme.isDailyUp"
+                        [class.change-pill--down]="!scheme.isDailyUp">
+                        <i class="fas" [class.fa-arrow-up]="scheme.isDailyUp"
+                            [class.fa-arrow-down]="!scheme.isDailyUp"></i>
+                        {{ scheme.isDailyUp ? '+' : '' }}{{ scheme.dailyChange | number:'1.4-4' }}
+                        ({{ scheme.isDailyUp ? '+' : '' }}{{ scheme.dailyChangePercent | number:'1.2-2' }}%)
+                    </span>
+                    <span class="nav-hero__date">{{ scheme.currentNavDateText }}</span>
+                </div>
+
+                <div class="nav-compare">
+                    <div class="nav-compare__item">
+                        <span class="nc-label">Day Before Yesterday</span>
+                        <span class="nc-value font-mono">&#8377;{{ scheme.previousNAV | number:'1.4-4' }}</span>
+                        <span class="nc-date">{{ scheme.previousNavDateText }}</span>
+                    </div>
+                    <div class="nav-compare__divider" aria-hidden="true"></div>
+                    <div class="nav-compare__item">
+                        <span class="nc-label">Yesterday</span>
+                        <span class="nc-value font-mono">&#8377;{{ scheme.currentNAV | number:'1.4-4' }}</span>
+                        <span class="nc-date">{{ scheme.currentNavDateText }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="week-card week-card--hero" *ngIf="scheme.weekReturn !== null"
+                [class.week-card--up]="scheme.isWeekUp" [class.week-card--down]="!scheme.isWeekUp">
+                <div class="week-card__accent"></div>
+                <div class="week-card__left">
+                    <div class="week-card__label">This week's return</div>
+                    <div class="week-card__sub">
+                        {{ scheme.weekStartDateText }} &rarr; {{ scheme.currentNavDateText }}
+                    </div>
+                </div>
+                <div class="week-card__right">
+                    <div class="week-pct" [class.text-success]="scheme.isWeekUp" [class.text-danger]="!scheme.isWeekUp">
+                        {{ scheme.isWeekUp ? '+' : '' }}{{ scheme.weekReturn | number:'1.2-2' }}%
+                    </div>
+                    <div class="week-pts" [class.text-success]="scheme.isWeekUp" [class.text-danger]="!scheme.isWeekUp">
+                        <i class="fas" [class.fa-arrow-up]="scheme.isWeekUp"
+                            [class.fa-arrow-down]="!scheme.isWeekUp"></i>
+                        {{ scheme.isWeekUp ? '+' : '' }}{{ scheme.weekReturnPoints | number:'1.4-4' }} NAV pts
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- -- Sparkline Chart ───────────────────────────────────── -->
+    <div class="sparkline-card" *ngIf="scheme.navHistory.length > 1">
+        <div class="sparkline-chart-wrapper">
+            <canvas #sparklineCanvas class="sparkline-canvas" role="img"
+                [attr.aria-label]="'30-day NAV trend for ' + scheme.schemeName"></canvas>
+        </div>
+        <div class="sparkline-labels">
+            <span class="text-muted text-xs">
+                {{ scheme.navHistory[0]?.dateText }}
+            </span>
+            <span class="text-muted text-xs">30-day NAV trend</span>
+            <span class="text-muted text-xs">
+                {{ scheme.navHistory[scheme.navHistory.length - 1]?.dateText }}
+            </span>
+        </div>
+    </div>
+
+    <!-- ── Period Returns ────────────────────────────────────── -->
+    <div class="section-header">
+        <h3>Period Returns</h3>
+        <span class="annualised-badge">Annualised</span>
+    </div>
+
+    <div *ngIf="hasPeriodReturns; else noPeriodData" class="period-grid">
+        <div class="period-card" *ngFor="let card of periodCards; let i = index; trackBy: trackByCard"
+            [class.period-card--up]="card.period?.isPositive"
+            [class.period-card--down]="card.period && !card.period.isPositive"
+            [class.period-card--empty]="!card.period?.hasData">
+
+            <ng-container *ngIf="card.period?.hasData; else noData">
+
+                <!-- Label -->
+                <div class="pc-label">{{ card.label }}</div>
+
+                <!-- Start NAV (large, like "23,618.00") -->
+                <div class="pc-nav font-mono">
+                    ₹{{ card.period!.startNAV | number:'1.2-2' }}
+                </div>
+
+                <!-- NAV change in pts -->
+                <div class="pc-pts text-muted">
+                    ({{ card.period!.isPositive ? '+' : '' }}{{ card.period!.returnPoints | number:'1.4-4' }})
+                </div>
+
+                <!-- % with arrow icon — coloured -->
+                <div class="pc-pct" [class.pc-pct--up]="card.period!.isPositive"
+                    [class.pc-pct--down]="!card.period!.isPositive">
+                    {{ card.period!.isPositive ? '+' : '' }}{{ card.period!.returnPercent | number:'1.2-2' }}%
+                    <i class="fas" [class.fa-circle-arrow-up]="card.period!.isPositive"
+                        [class.fa-circle-arrow-down]="!card.period!.isPositive"></i>
+                </div>
+
+                <!-- Mini sparkline flush at bottom -->
+                <div class="pc-chart" [class.pc-chart--up]="card.period!.isPositive"
+                    [class.pc-chart--down]="!card.period!.isPositive">
+                    <canvas #periodCanvas class="pc-canvas" role="img"
+                        [attr.aria-label]="'Trend for ' + card.label"></canvas>
+                </div>
+
+            </ng-container>
+
+            <!-- No data -->
+            <ng-template #noData>
+                <div class="pc-label">{{ card.label }}</div>
+                <div class="pc-nav text-muted">—</div>
+                <div class="pc-pts text-muted text-xs">No data</div>
+            </ng-template>
+
+        </div>
+    </div>
+
+    <ng-template #noPeriodData>
+        <div class="card empty-state period-empty" role="status" aria-live="polite">
+            <h4>No period return data available</h4>
+            <p>Return history is not available for these time periods yet.</p>
+        </div>
+    </ng-template>
+
+</div>
+
+<!-- Error / Not Found -->
+<div class="card empty-state" *ngIf="!loading && !scheme" role="alert" aria-live="polite">
+    <i class="fas fa-chart-line"></i>
+    <h3>Scheme Not Found</h3>
+    <p>No data found for scheme code: <code>{{ schemeCode }}</code></p>
+    <button class="btn btn-primary mt-16" type="button" (click)="goBack()" aria-label="Go back to schemes list">
+        <i class="fas fa-arrow-left"></i> Go Back
+    </button>
+</div>

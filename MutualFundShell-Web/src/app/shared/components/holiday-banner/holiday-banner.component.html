@@ -1,0 +1,6 @@
+<!-- src/app/shared/components/holiday-banner/holiday-banner.component.html -->
+<div class="hb-banner" *ngIf="!dismissed">
+  <span class="hb-icon">📅</span>
+  <span class="hb-text">{{ status.message }}</span>
+  <button class="hb-close" (click)="dismiss()" aria-label="Dismiss">✕</button>
+</div>

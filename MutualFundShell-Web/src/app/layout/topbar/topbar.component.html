@@ -1,0 +1,31 @@
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="icon-btn" type="button" (click)="layout.toggleSidebar()" title="Toggle sidebar">
+      <i class="fas fa-bars"></i>
+    </button>
+    <div class="page-title">{{ pageTitle() }}</div>
+  </div>
+
+  <div class="topbar-actions">
+    <button class="icon-btn" type="button" title="Notifications">
+      <i class="fas fa-bell"></i>
+    </button>
+
+    <div class="account" (click)="toggleMenu(); $event.stopPropagation()">
+      <i class="fas fa-circle-user"></i>
+      <span>{{ user()?.name ?? 'Account' }}</span>
+      <i class="fas fa-chevron-down chevron"></i>
+
+      @if (menuOpen) {
+        <div class="account-menu" (click)="$event.stopPropagation()">
+          @if (user()?.email) {
+            <div class="account-menu-email">{{ user()?.email }}</div>
+          }
+          <button type="button" class="account-menu-item" (click)="logout()">
+            <i class="fas fa-right-from-bracket"></i> Logout
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+</header>

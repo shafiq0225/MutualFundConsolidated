@@ -1,0 +1,66 @@
+<app-loading-spinner *ngIf="loading" message="Loading pending approvals..."></app-loading-spinner>
+
+<div class="wrap" *ngIf="!loading">
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">User & Family Management</span>
+      <h1 class="display">Pending Approvals</h1>
+      <p class="sub">{{ pendingUsers.length }} registration(s) awaiting review</p>
+    </div>
+    <button class="btn-primary" *ngIf="pendingUsers.length" [disabled]="approvingAll" (click)="approveAll()">
+      <i class="fas fa-check-double" *ngIf="!approvingAll"></i>
+      <i class="fas fa-spinner fa-spin" *ngIf="approvingAll"></i>
+      Approve All
+    </button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>PAN</th>
+          <th>Requested</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let u of pendingUsers">
+          <td>{{ u.fullName }}</td>
+          <td class="muted-sm">{{ u.email }}</td>
+          <td class="num">{{ u.panNumber }}</td>
+          <td>{{ u.createdAt | date:'dd MMM yy, h:mm a' }}</td>
+          <td class="row-actions">
+            <button class="icon-btn" title="Approve" (click)="approveUser(u)"><i class="fas fa-check"></i></button>
+            <button class="icon-btn" title="Reject" (click)="openRejectModal(u)"><i class="fas fa-times"></i></button>
+          </td>
+        </tr>
+        <tr *ngIf="!pendingUsers.length">
+          <td colspan="5" class="empty-row">No pending approvals — all caught up.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Reject Modal ───────────────────────────────────────────── -->
+<div class="modal-overlay" *ngIf="showRejectModal" (click)="closeRejectModal()">
+  <div class="modal" (click)="$event.stopPropagation()" *ngIf="rejectingUser">
+    <div class="modal-header">
+      <h3 class="display">Reject Registration</h3>
+      <button class="icon-btn" (click)="closeRejectModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <p class="sub">{{ rejectingUser.fullName }} — {{ rejectingUser.email }}</p>
+      <div class="form-row">
+        <label>Reason (optional)</label>
+        <textarea rows="3" [formControl]="rejectReason" placeholder="Reason for rejection"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" (click)="closeRejectModal()">Cancel</button>
+      <button class="btn-primary" (click)="confirmReject()">Reject</button>
+    </div>
+  </div>
+</div>

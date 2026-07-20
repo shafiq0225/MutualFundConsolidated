@@ -1,0 +1,148 @@
+<div class="auth-page">
+  <!-- Left Panel -->
+  <div class="auth-left">
+    <div class="auth-left__content">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <h1 class="brand-name">Mutual Fund</h1>
+      </div>
+
+      <div class="auth-left__hero">
+        <h2>Join the Platform</h2>
+        <p>Register your account to start managing mutual fund investments for your family. Admin approval is required before access is granted.</p>
+      </div>
+
+      <div class="info-box">
+        <i class="fas fa-circle-info"></i>
+        <div>
+          <h4>How it works</h4>
+          <ol>
+            <li>Register with your PAN number</li>
+            <li>Wait for Admin approval</li>
+            <li>Login once approved</li>
+            <li>Access based on assigned permissions</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Panel -->
+  <div class="auth-right">
+    <div class="auth-card">
+      <!-- Header -->
+      <div class="auth-card__header">
+        <h2>Create Account</h2>
+        <p>Fill in your details to register</p>
+      </div>
+
+      <!-- Form -->
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" novalidate>
+
+        <!-- Name row -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">First Name</label>
+            <input type="text" class="form-control"
+              [class.is-invalid]="registerForm.get('firstName')?.touched && registerForm.get('firstName')?.invalid"
+              formControlName="firstName" placeholder="John">
+            <div class="form-error" *ngIf="registerForm.get('firstName')?.touched && registerForm.get('firstName')?.invalid">
+              <span *ngIf="registerForm.get('firstName')?.errors?.['required']">Required.</span>
+              <span *ngIf="registerForm.get('firstName')?.errors?.['minlength']">Min 2 chars.</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Last Name</label>
+            <input type="text" class="form-control"
+              [class.is-invalid]="registerForm.get('lastName')?.touched && registerForm.get('lastName')?.invalid"
+              formControlName="lastName" placeholder="Doe">
+            <div class="form-error" *ngIf="registerForm.get('lastName')?.touched && registerForm.get('lastName')?.invalid">
+              <span *ngIf="registerForm.get('lastName')?.errors?.['required']">Required.</span>
+              <span *ngIf="registerForm.get('lastName')?.errors?.['minlength']">Min 2 chars.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <div class="input-wrapper">
+            <i class="fas fa-envelope input-icon"></i>
+            <input type="email" class="form-control"
+              [class.is-invalid]="registerForm.get('email')?.touched && registerForm.get('email')?.invalid" formControlName="email"
+              placeholder="john@example.com">
+          </div>
+          <div class="form-error" *ngIf="registerForm.get('email')?.touched && registerForm.get('email')?.invalid">
+            <span *ngIf="registerForm.get('email')?.errors?.['required']">Email is required.</span>
+            <span *ngIf="registerForm.get('email')?.errors?.['email']">Please enter a valid email.</span>
+          </div>
+        </div>
+
+        <!-- PAN Number -->
+        <div class="form-group">
+          <label class="form-label">PAN Number</label>
+          <div class="input-wrapper">
+            <i class="fas fa-id-card input-icon"></i>
+            <input type="text" class="form-control"
+              [class.is-invalid]="registerForm.get('panNumber')?.touched && registerForm.get('panNumber')?.invalid"
+              formControlName="panNumber" placeholder="ABCDE1234F" style="text-transform: uppercase;">
+          </div>
+          <div class="form-error" *ngIf="registerForm.get('panNumber')?.touched && registerForm.get('panNumber')?.invalid">
+            <span *ngIf="registerForm.get('panNumber')?.errors?.['required']">PAN is required.</span>
+            <span *ngIf="registerForm.get('panNumber')?.errors?.['pattern']">Please enter a valid PAN (e.g., ABCDE1234F).</span>
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="input-wrapper">
+            <i class="fas fa-lock input-icon"></i>
+            <input [type]="showPassword ? 'text' : 'password'" class="form-control"
+              [class.is-invalid]="registerForm.get('password')?.touched && registerForm.get('password')?.invalid"
+              formControlName="password" placeholder="••••••••">
+            <button type="button" class="input-suffix" (click)="showPassword = !showPassword" tabindex="-1">
+              <i class="fas" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword"></i>
+            </button>
+          </div>
+          <div class="form-error" *ngIf="registerForm.get('password')?.touched && registerForm.get('password')?.invalid">
+            <span *ngIf="registerForm.get('password')?.errors?.['required']">Password is required.</span>
+            <span *ngIf="registerForm.get('password')?.errors?.['minlength']">Min 6 chars.</span>
+          </div>
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          <div class="input-wrapper">
+            <i class="fas fa-lock input-icon"></i>
+            <input [type]="showConfirmPassword ? 'text' : 'password'" class="form-control"
+              [class.is-invalid]="registerForm.get('confirmPassword')?.touched && (registerForm.get('confirmPassword')?.invalid || registerForm.errors?.['mismatch'])"
+              formControlName="confirmPassword" placeholder="••••••••">
+            <button type="button" class="input-suffix" (click)="showConfirmPassword = !showConfirmPassword" tabindex="-1">
+              <i class="fas" [class.fa-eye]="!showConfirmPassword" [class.fa-eye-slash]="showConfirmPassword"></i>
+            </button>
+          </div>
+          <div class="form-error" *ngIf="registerForm.get('confirmPassword')?.touched && (registerForm.get('confirmPassword')?.invalid || registerForm.errors?.['mismatch'])">
+            <span *ngIf="registerForm.get('confirmPassword')?.errors?.['required']">Please confirm your password.</span>
+            <span *ngIf="registerForm.errors?.['mismatch']">Passwords do not match.</span>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn btn-primary btn-block" [disabled]="isLoading || registerForm.invalid">
+          <span *ngIf="!isLoading">Register</span>
+          <span *ngIf="isLoading">Registering...</span>
+        </button>
+
+        <!-- Footer -->
+        <div class="auth-card__footer">
+          <p>Already have an account? <a (click)="goToLogin()">Sign in</a></p>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

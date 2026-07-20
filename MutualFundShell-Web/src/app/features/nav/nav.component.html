@@ -1,0 +1,283 @@
+<!-- Add at the top of nav.component.html -->
+<app-holiday-banner *ngIf="holidayStatus" [status]="holidayStatus">
+</app-holiday-banner>
+
+<!-- rest of your existing nav.component.html below unchanged -->
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h2>NAV Comparison Report</h2>
+        <p *ngIf="navData">{{ navData!.message }}</p>
+        <p *ngIf="!navData && !loading">Select a date range or click Today</p>
+    </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="card mb-24">
+    <div class="filter-bar">
+        <!-- Date range -->
+        <div class="date-group">
+            <label class="form-label">Start Date</label>
+            <input type="date" class="form-control date-input" [formControl]="startDate">
+        </div>
+        <div class="date-group">
+            <label class="form-label">End Date</label>
+            <input type="date" class="form-control date-input" [formControl]="endDate">
+        </div>
+        <div class="filter-actions">
+            <button class="btn btn-primary" (click)="loadByDateRange()">
+                <i class="fas fa-search"></i> Search
+            </button>
+            <button class="btn btn-ghost" (click)="loadDaily()">
+                <i class="fas fa-rotate"></i> Today
+            </button>
+        </div>
+
+        <!-- Divider -->
+        <div class="filter-divider"></div>
+
+        <!-- Search -->
+        <div class="search-box">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="form-control search-input" placeholder="Search scheme or fund name..."
+                [formControl]="searchCtrl">
+            <button class="search-clear" *ngIf="searchCtrl.value" (click)="clearSearch()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <span class="result-count" *ngIf="navData">
+            <i class="fas fa-building-columns"></i>
+            {{ filtered.length }} schemes
+        </span>
+    </div>
+</div>
+
+<!-- Loading -->
+<app-loading-spinner *ngIf="loading" message="Loading NAV report...">
+</app-loading-spinner>
+
+<!-- No Data -->
+<div class="empty-card card" *ngIf="!loading && !navData">
+    <i class="fas fa-table"></i>
+    <h3>No Data Available</h3>
+    <p>Click <strong>Today</strong> to load the latest NAV comparison.</p>
+</div>
+
+<!-- NAV Report Table -->
+<div class="nav-report-wrap" *ngIf="!loading && navData">
+    <div class="table-container nav-report">
+
+        <!-- Summary strip -->
+        <div class="report-strip">
+            <div class="strip-item">
+                <i class="fas fa-calendar-day"></i>
+                <span>Period:</span>
+                <strong>{{ startDateLabel }} → {{ endDateLabel }}</strong>
+            </div>
+            <div class="strip-item">
+                <i class="fas fa-building-columns"></i>
+                <span>Total Schemes:</span>
+                <strong>{{ filtered.length }}</strong>
+            </div>
+            <div class="strip-item">
+                <i class="fas fa-arrow-trend-up"></i>
+                <span>Growing:</span>
+                <strong class="text-success">
+                    {{ filtered | navGrowCount:true }}
+                </strong>
+            </div>
+            <div class="strip-item">
+                <i class="fas fa-arrow-trend-down"></i>
+                <span>Declining:</span>
+                <strong class="text-danger">
+                    {{ filtered | navGrowCount:false }}
+                </strong>
+            </div>
+        </div>
+
+        <table class="table nav-table">
+            <thead>
+                <tr>
+                    <th class="col-rank">Rank</th>
+                    <th class="col-scheme">Scheme Name</th>
+                    <th class="col-date">
+                        Start Date<br>
+                        <span class="date-sub">{{ startDateLabel }}</span>
+                    </th>
+                    <th class="col-date">
+                        End Date<br>
+                        <span class="date-sub">{{ endDateLabel }}</span>
+                    </th>
+                    <th class="col-perf">Performance</th>
+                    <th class="col-action"></th> <!-- ← named class -->
+                </tr>
+            </thead>
+            <tbody>
+                <ng-container *ngFor="let group of groupedSchemes()">
+                    <tr *ngFor="let scheme of group.schemes; let first = first" [class.row-top1]="group.rank === 1"
+                        [class.row-top2]="group.rank === 2" [class.row-top3]="group.rank === 3"
+                        class="scheme-row clickable" (click)="viewSchemeDetails(scheme.schemeCode)"
+                        title="Click to view scheme details">
+
+                        <!-- Rank -->
+                        <td class="col-rank">
+                            <div class="rank-cell">
+                                <div class="rank-number" [class.r1]="group.rank === 1" [class.r2]="group.rank === 2"
+                                    [class.r3]="group.rank === 3">
+                                    {{ group.rank }}
+                                </div>
+                                <span class="top-label" *ngIf="first && group.rank <= 3">
+                                    {{ getRankLabel(group.rank) }}
+                                </span>
+                            </div>
+                        </td>
+
+                        <!-- Scheme Name -->
+                        <td class="col-scheme">
+                            <div class="scheme-cell">
+                                <span class="scheme-name">{{ scheme.schemeName }}</span>
+                                <span class="fund-name">{{ scheme.fundName }}</span>
+                                <code class="scheme-code">{{ scheme.schemeCode }}</code>
+                            </div>
+                        </td>
+
+                        <!-- Start Date NAV -->
+                        <td class="col-date">
+                            <div class="nav-cell-data" *ngIf="getStartEntry(scheme) as start">
+                                <span class="nav-value">{{ start.nav | number:'1.2-2' }}</span>
+                                <span class="nav-pct" [class.pct-positive]="start.isGrowth"
+                                    [class.pct-negative]="!start.isGrowth">
+                                    {{ start.percentage }}%
+                                </span>
+                            </div>
+                        </td>
+
+                        <!-- End Date NAV -->
+                        <td class="col-date">
+                            <div class="nav-cell-data" *ngIf="getEndEntry(scheme) as end">
+                                <span class="nav-value">{{ end.nav | number:'1.2-2' }}</span>
+                                <span class="nav-pct" [class.pct-positive]="end.isGrowth"
+                                    [class.pct-negative]="!end.isGrowth">
+                                    {{ end.percentage }}%
+                                </span>
+                            </div>
+                        </td>
+
+                        <!-- Performance -->
+                        <td class="col-perf">
+                            <div class="perf-cell" [class.perf-up]="isGrowth(scheme)"
+                                [class.perf-down]="!isGrowth(scheme)">
+                                <i class="fas" [class.fa-arrow-up]="isGrowth(scheme)"
+                                    [class.fa-arrow-down]="!isGrowth(scheme)">
+                                </i>
+                                <span>{{ getPerformance(scheme) }}%</span>
+                            </div>
+                        </td>
+                        <td class="text-muted text-xs">
+                            <i class="fas fa-chevron-right"></i>
+                        </td>
+                    </tr>
+                </ng-container>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Mobile Accordion (hidden on desktop via CSS) -->
+<div class="mobile-nav-wrap" *ngIf="!loading && navData">
+
+    <!-- Summary strip -->
+    <div class="mobile-strip">
+        <div class="mstrip-item">
+            <i class="fas fa-calendar-day"></i>
+            <span>{{ startDateLabel }} → {{ endDateLabel }}</span>
+        </div>
+        <div class="mstrip-item">
+            <i class="fas fa-building-columns"></i>
+            <strong>{{ filtered.length }}</strong>
+            <span>schemes</span>
+        </div>
+        <div class="mstrip-item">
+            <i class="fas fa-arrow-trend-up"></i>
+            <strong class="text-success">{{ filtered | navGrowCount:true }}</strong>
+            <span>growing</span>
+        </div>
+        <div class="mstrip-item">
+            <i class="fas fa-arrow-trend-down"></i>
+            <strong class="text-danger">{{ filtered | navGrowCount:false }}</strong>
+            <span>declining</span>
+        </div>
+    </div>
+
+    <!-- Accordion list -->
+    <div class="acc-list">
+        <ng-container *ngFor="let group of groupedSchemes()">
+            <div *ngFor="let scheme of group.schemes; let first = first" class="acc-row"
+                [class.rank-1]="group.rank === 1" [class.rank-2]="group.rank === 2" [class.rank-3]="group.rank === 3"
+                [class.is-open]="isExpanded(scheme.schemeCode)">
+
+                <!-- Trigger row -->
+                <div class="acc-trigger" (click)="toggleScheme(scheme.schemeCode)">
+
+                    <!-- Rank badge -->
+                    <div class="acc-rank-badge" [class.r1]="group.rank === 1" [class.r2]="group.rank === 2"
+                        [class.r3]="group.rank === 3">
+                        {{ group.rank }}
+                    </div>
+
+                    <!-- Name block -->
+                    <div class="acc-name-block">
+                        <span class="acc-scheme-name">{{ scheme.schemeName }}</span>
+                        <span class="acc-fund-name">{{ scheme.fundName }}</span>
+                    </div>
+
+                    <!-- Performance badge + chevron -->
+                    <div class="acc-trigger-right">
+                        <div class="acc-perf-badge" [class.badge-up]="isGrowth(scheme)"
+                            [class.badge-down]="!isGrowth(scheme)">
+                            <i class="fas" [class.fa-arrow-up]="isGrowth(scheme)"
+                                [class.fa-arrow-down]="!isGrowth(scheme)">
+                            </i>
+                            {{ getPerformance(scheme) }}%
+                        </div>
+                        <i class="fas fa-chevron-down acc-chevron"></i>
+                    </div>
+                </div>
+
+                <!-- Expanded body -->
+                <div class="acc-body" *ngIf="isExpanded(scheme.schemeCode)">
+                    <div class="acc-nav-grid">
+
+                        <div class="acc-nav-tile" *ngIf="getStartEntry(scheme) as start">
+                            <span class="tile-label">Start NAV · {{ startDateLabel }}</span>
+                            <span class="tile-value">{{ start.nav | number:'1.2-2' }}</span>
+                            <span class="tile-pct" [class.pct-positive]="start.isGrowth"
+                                [class.pct-negative]="!start.isGrowth">
+                                {{ start.percentage }}%
+                            </span>
+                        </div>
+
+                        <div class="acc-nav-tile" *ngIf="getEndEntry(scheme) as end">
+                            <span class="tile-label">End NAV · {{ endDateLabel }}</span>
+                            <span class="tile-value">{{ end.nav | number:'1.2-2' }}</span>
+                            <span class="tile-pct" [class.pct-positive]="end.isGrowth"
+                                [class.pct-negative]="!end.isGrowth">
+                                {{ end.percentage }}%
+                            </span>
+                        </div>
+
+                    </div>
+                    <code class="acc-scheme-code">{{ scheme.schemeCode }}</code>
+                    <button class="acc-details-btn" (click)="viewSchemeDetails(scheme.schemeCode);
+                   $event.stopPropagation()">
+                        <i class="fas fa-chart-line"></i>
+                        View Scheme Details
+                        <i class="fas fa-arrow-right acc-details-arrow"></i>
+                    </button>
+                </div>
+
+            </div>
+        </ng-container>
+    </div>
+</div>

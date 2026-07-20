@@ -1,0 +1,17 @@
+<div class="shell-layout">
+  @if (showChrome()) {
+    <shell-sidebar></shell-sidebar>
+    @if (!layout.sidebarCollapsed()) {
+      <div class="sidebar-backdrop" (click)="layout.toggleSidebar()"></div>
+    }
+  }
+
+  <div class="shell-main">
+    @if (showChrome()) {
+      <shell-topbar></shell-topbar>
+    }
+    <div class="shell-content" [class.full-bleed]="!showChrome()">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,557 @@
+@use "../../../styles/variables" as *;
+@use "../../../styles/mixins" as *;
+
+// ── Page Header (cover styling comes from global .page-header) ─────
+.page-header {
+  @include flex-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+
+  h2 {
+    font-family: $font-display;
+    font-size: $font-size-2xl;
+    color: #F3EEDF;
+    margin-bottom: 6px;
+  }
+  p {
+    font-size: $font-size-sm;
+    color: #B9C3DD;
+    margin: 0;
+  }
+
+  // Enroll button sits on the dark cover — use the gold outline treatment.
+  .btn-primary {
+    background: transparent;
+    color: #F3EEDF;
+    border: 1.5px solid $gold;
+    &:hover:not(:disabled) { background: rgba($gold, 0.16); }
+  }
+}
+
+// ── Filters ───────────────────────────────────────────────────────
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 240px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: $text-muted;
+  font-size: 13px;
+}
+
+.search-input {
+  padding-left: 40px !important;
+}
+
+.filter-select {
+  width: 160px;
+  height: 44px;
+  cursor: pointer;
+}
+
+.results-count {
+  font-size: $font-size-sm;
+  color: $text-muted;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+// ── Table ─────────────────────────────────────────────────────────
+.scheme-code {
+  font-family: $font-mono;
+  font-size: 13px;
+  font-weight: 700;
+  background: rgba($primary, 0.06);
+  color: $primary;
+  padding: 4px 10px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.scheme-name-cell {
+  @include flex-start;
+  gap: 10px;
+}
+
+.scheme-icon {
+  font-size: 14px;
+  color: $gold;
+  flex-shrink: 0;
+}
+
+.scheme-name {
+  font-size: $font-size-sm;
+  color: $text-primary;
+  font-weight: 500;
+}
+
+// ── Action Buttons ────────────────────────────────────────────────
+.action-menu {
+  @include flex-start;
+  gap: 6px;
+}
+
+.action-btn {
+  @include flex-center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: $transition-fast;
+
+  &-primary {
+    background: rgba($primary, 0.1);
+    color: $primary;
+    &:hover {
+      background: $primary;
+      color: #fff;
+    }
+  }
+  &-success {
+    background: $success-light;
+    color: $success;
+    &:hover {
+      background: $success;
+      color: #fff;
+    }
+  }
+  &-warning {
+    background: $warning-light;
+    color: $warning-dark;
+    &:hover {
+      background: $warning;
+      color: #fff;
+    }
+  }
+}
+
+// ── Empty State ───────────────────────────────────────────────────
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: $text-muted;
+
+  i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.25;
+    display: block;
+  }
+  h3 {
+    font-size: $font-size-lg;
+    color: $text-secondary;
+    margin-bottom: 8px;
+  }
+  p {
+    font-size: $font-size-sm;
+    margin: 0;
+  }
+}
+
+// ── Toggle Switch ─────────────────────────────────────────────────
+.toggle-label {
+  @include flex-between;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1.5px solid $border;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: $transition-fast;
+  gap: 16px;
+
+  &:hover {
+    border-color: $primary-light;
+    background: rgba($primary, 0.02);
+  }
+}
+
+.toggle-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.toggle-title {
+  font-size: $font-size-base;
+  font-weight: 600;
+  color: $text-primary;
+}
+
+.toggle-desc {
+  font-size: $font-size-xs;
+  color: $text-muted;
+}
+
+.toggle-control {
+  flex-shrink: 0;
+}
+
+.toggle-input {
+  display: none;
+
+  &:checked + .toggle-switch {
+    background: $accent;
+
+    &::after {
+      transform: translateX(20px);
+    }
+  }
+}
+
+.toggle-switch {
+  display: block;
+  width: 44px;
+  height: 24px;
+  background: $border-dark;
+  border-radius: 12px;
+  position: relative;
+  transition: $transition-fast;
+  cursor: pointer;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    transition: $transition-fast;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  }
+}
+
+// ── Modal ─────────────────────────────────────────────────────────
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: $z-modal;
+  @include flex-center;
+  padding: 20px;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal {
+  background: $surface;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: $shadow-lg;
+  overflow: hidden;
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  @include flex-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid $border;
+
+  h3 {
+    @include flex-start;
+    gap: 10px;
+    margin: 0;
+    font-size: $font-size-lg;
+    color: $primary;
+  }
+}
+
+.modal-close {
+  @include flex-center;
+  width: 32px;
+  height: 32px;
+  background: $hover-bg;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: $text-muted;
+  transition: $transition-fast;
+
+  &:hover {
+    background: $danger-light;
+    color: $danger;
+  }
+}
+
+.modal-body {
+  padding: 24px;
+  max-height: 65vh;
+  overflow-y: auto;
+  @include custom-scrollbar;
+}
+
+.modal-footer {
+  @include flex-between;
+  padding: 16px 24px;
+  border-top: 1px solid $border;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+// ── Read-only scheme code in edit modal ───────────────────────────
+.scheme-readonly {
+  @include flex-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: $page-bg;
+  border-radius: 8px;
+
+  &__label {
+    font-size: $font-size-sm;
+    font-weight: 500;
+    color: $text-muted;
+  }
+}
+
+// ── Label hint ────────────────────────────────────────────────────
+.label-hint {
+  font-size: $font-size-xs;
+  color: $text-muted;
+  font-weight: 400;
+  margin-left: 8px;
+}
+
+// ── Input with icon ───────────────────────────────────────────────
+.input-wrapper {
+  position: relative;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: $text-muted;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.form-control {
+  padding-left: 42px !important;
+}
+
+// ── Info box ──────────────────────────────────────────────────────
+.info-box {
+  @include flex-start;
+  gap: 12px;
+  align-items: flex-start;
+  background: rgba($primary, 0.04);
+  border: 1px solid rgba($primary, 0.12);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-top: 16px;
+
+  > i {
+    color: $primary-light;
+    font-size: 16px;
+    margin-top: 2px;
+  }
+
+  p {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    margin: 0;
+    line-height: 1.6;
+  }
+}
+
+// ── Desktop / Mobile visibility ───────────────────────────────────
+.desktop-table {
+  display: table;
+}
+.accordion-list {
+  display: none;
+}
+
+@include mobile {
+  .desktop-table {
+    display: none;
+  }
+  .accordion-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+  }
+}
+
+// ── Accordion Card ────────────────────────────────────────────────
+.accordion-card {
+  background: $surface;
+  border: 1.5px solid $border;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: $transition-fast;
+
+  &.is-expanded {
+    border-color: $primary-light;
+    box-shadow: 0 0 0 3px rgba(46, 117, 182, 0.08);
+
+    .accordion-chevron {
+      transform: rotate(180deg);
+    }
+    .accordion-body {
+      max-height: 300px;
+      opacity: 1;
+      padding: 12px 16px 16px;
+    }
+  }
+}
+
+// ── Accordion Header ──────────────────────────────────────────────
+.accordion-header {
+  @include flex-between;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+
+  &:active {
+    background: $hover-bg;
+  }
+
+  &__left {
+    @include flex-start;
+    gap: 10px;
+    min-width: 0; // allow text to shrink
+    flex: 1;
+  }
+
+  &__right {
+    @include flex-start;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+}
+
+.accordion-index {
+  font-size: $font-size-xs;
+  font-weight: 600;
+  min-width: 16px;
+  flex-shrink: 0;
+}
+
+.accordion-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.accordion-name {
+  font-size: $font-size-sm;
+  color: $text-primary;
+  font-weight: 500;
+  // Clamp to 2 lines so card stays compact when collapsed
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+.accordion-chevron {
+  font-size: 12px;
+  color: $text-muted;
+  transition: transform 0.2s ease;
+}
+
+// ── Accordion Body ────────────────────────────────────────────────
+.accordion-body {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  padding: 0 16px;
+  transition:
+    max-height 0.25s ease,
+    opacity 0.2s ease,
+    padding 0.2s ease;
+  border-top: 1px solid $border;
+}
+
+.accordion-detail-row {
+  @include flex-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed $border;
+
+  &:last-of-type {
+    border-bottom: none;
+  }
+}
+
+.accordion-detail-label {
+  font-size: $font-size-xs;
+  font-weight: 600;
+  color: $text-muted;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.accordion-detail-value {
+  font-size: $font-size-sm;
+  color: $text-secondary;
+}
+
+// ── Accordion Action Buttons ──────────────────────────────────────
+.accordion-actions {
+  @include flex-start;
+  gap: 10px;
+  padding-top: 12px;
+}
+
+.btn-success-soft {
+  background: $success-light;
+  color: $success;
+  border: 1.5px solid rgba($success, 0.3);
+  &:hover {
+    background: $success;
+    color: #fff;
+  }
+}
+
+.btn-warning-soft {
+  background: $warning-light;
+  color: $warning-dark;
+  border: 1.5px solid rgba($warning, 0.3);
+  &:hover {
+    background: $warning;
+    color: #fff;
+  }
+}

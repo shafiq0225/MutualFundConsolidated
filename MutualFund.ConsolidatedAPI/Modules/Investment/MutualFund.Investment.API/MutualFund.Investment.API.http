@@ -1,0 +1,6 @@
+@MutualFund.Investment.API_HostAddress = http://localhost:5043
+
+GET {{MutualFund.Investment.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

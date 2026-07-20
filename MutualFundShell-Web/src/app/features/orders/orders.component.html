@@ -1,0 +1,376 @@
+<app-loading-spinner *ngIf="loading" message="Loading orders..."></app-loading-spinner>
+
+<ng-container *ngIf="!loading">
+
+  <!-- ══ Passbook cover ══════════════════════════════════════ -->
+  <div class="cover">
+    <div class="cover-inner">
+      <div class="eyebrow">Investment Placement Workflow</div>
+
+      <div class="cover-controls">
+        <div class="investor-select-wrap">
+          <select class="investor-select" [(ngModel)]="investorFilter" (ngModelChange)="onInvestorChange()">
+            <option value="all">{{ allInvestorsLabel }}</option>
+            <option *ngFor="let inv of investors" [value]="inv.userId">
+              {{ inv.fullName }}<ng-container *ngIf="inv.relation"> ({{ inv.relation }})</ng-container>
+            </option>
+          </select>
+        </div>
+
+        <div class="controls-row">
+          <div class="control">
+            <div class="filter-label">Scheme</div>
+            <div class="scheme-filter-wrap">
+              <select class="scheme-filter" [(ngModel)]="schemeFilter" (ngModelChange)="applyFilters()">
+                <option value="all">All schemes</option>
+                <option *ngFor="let s of schemeFilterOptions" [value]="s.code">{{ s.name }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="control">
+            <div class="filter-label">Order Date Range</div>
+            <div class="date-range-wrap">
+              <input type="date" class="date-filter" [(ngModel)]="dateFrom" (ngModelChange)="applyFilters()" />
+              <span class="date-range-sep">to</span>
+              <input type="date" class="date-filter" [(ngModel)]="dateTo" (ngModelChange)="applyFilters()" />
+              <button type="button" class="date-range-clear" (click)="clearDateRange()">Clear</button>
+            </div>
+          </div>
+
+          <button type="button" class="btn-gold" *ngIf="auth.canAddOrders()" (click)="openNewOrderModal()">+ New order</button>
+        </div>
+      </div>
+
+      <div class="stat-strip">
+        <div class="stat-card">
+          <div class="stat-card-label">Total Orders</div>
+          <div class="stat-card-value">{{ totalOrders }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Total Invested</div>
+          <div class="stat-card-value">₹{{ totalInvested | number:'1.2-2' }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Total Units</div>
+          <div class="stat-card-value">{{ totalUnits | number:'1.3-3' }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Folios</div>
+          <div class="stat-card-value">{{ totalFolios }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">This Month ({{ thisMonthLabel }})</div>
+          <div class="stat-card-value">₹{{ thisMonthInvested | number:'1.2-2' }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <!-- ══ Scheme-wise summary ═══════════════════════════════ -->
+    <div class="section">
+      <div class="section-head">
+        <h2 class="section-title">Scheme-wise summary</h2>
+        <span class="section-sub">Tap a scheme to filter the orders below</span>
+      </div>
+      <div class="scheme-cards">
+        <ng-container *ngIf="schemeSummaries.length; else noSchemes">
+          <div class="scheme-card" *ngFor="let s of schemeSummaries"
+               [class.active]="schemeFilter === s.schemeCode"
+               (click)="selectSchemeCard(s.schemeCode)">
+            <div class="scheme-card-name">{{ s.schemeName }}</div>
+            <div class="scheme-card-row"><span>Invested</span><b>₹{{ s.invested | number:'1.2-2' }}</b></div>
+            <div class="scheme-card-row"><span>Orders</span><b>{{ s.count }}</b></div>
+          </div>
+        </ng-container>
+        <ng-template #noSchemes>
+          <div class="empty-note">No schemes for this selection.</div>
+        </ng-template>
+      </div>
+    </div>
+
+    <!-- ══ Orders ledger ═════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-head">
+        <h2 class="section-title">{{ ordersTitle }}</h2>
+        <span class="section-sub">Tap any row or card to view status &amp; take the next step</span>
+      </div>
+
+      <!-- Desktop View -->
+      <div class="ledger-wrap desktop-only">
+        <table class="orders">
+          <thead>
+            <tr>
+              <th>Order No</th><th>Investor</th><th>Scheme</th><th class="num-col">Amount (₹)</th>
+              <th>Payment</th><th>Order Date</th><th>Status</th>
+              <th class="num-col">Purchase NAV</th><th class="num-col">Units</th>
+              <th>Folio</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let o of filtered" class="cursor-pointer" (click)="openDrawer(o)">
+              <td class="num">{{ o.orderNumber }}</td>
+              <td>
+                <div class="investor-cell">
+                  <div class="avatar">{{ initials(o.investorName) }}</div>
+                  <span>{{ o.investorName }}</span>
+                </div>
+              </td>
+              <td><span class="scheme-cell">{{ o.schemeName }}</span></td>
+              <td class="num-col">{{ o.investedAmount | number:'1.2-2' }}</td>
+              <td><span class="mode-pill">{{ o.paymentMode }}</span></td>
+              <td>{{ o.orderDate | date:'dd MMM yyyy' }}</td>
+              <td>
+                <span class="stamp" [ngClass]="displayStatus(o.status).cls">{{ displayStatus(o.status).label }}</span>
+              </td>
+              <td class="num-col">{{ o.purchaseNAV ? ('₹' + (o.purchaseNAV | number:'1.4-4')) : '—' }}</td>
+              <td class="num-col">{{ o.unitsAllotted ? (o.unitsAllotted | number:'1.3-3') : '—' }}</td>
+              <td class="folio">{{ o.folioNumber || '—' }}</td>
+              <td>
+                <button class="icon-btn" (click)="openDrawer(o); $event.stopPropagation()" title="View details">&#8942;</button>
+              </td>
+            </tr>
+            <tr *ngIf="!filtered.length">
+              <td colspan="11" class="empty-note">No orders match this selection.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile View -->
+      <div class="orders-mobile-cards mobile-only">
+        <ng-container *ngIf="filtered.length; else noMobileOrders">
+          <div class="mobile-card" *ngFor="let o of filtered" (click)="openDrawer(o)">
+            <div class="mcard-header">
+              <span class="mcard-no">#{{ o.orderNumber }}</span>
+              <span class="stamp" [ngClass]="displayStatus(o.status).cls">{{ displayStatus(o.status).label }}</span>
+            </div>
+            <div class="mcard-body">
+              <div class="mcard-title">{{ o.schemeName }}</div>
+              <div class="mcard-investor">
+                <div class="avatar">{{ initials(o.investorName) }}</div>
+                <span>{{ o.investorName }}</span>
+              </div>
+              <div class="mcard-stats">
+                <div>
+                  <span class="mcard-label">Amount</span>
+                  <span class="mcard-value num">₹{{ o.investedAmount | number:'1.2-2' }}</span>
+                </div>
+                <div>
+                  <span class="mcard-label">Date</span>
+                  <span class="mcard-value">{{ o.orderDate | date:'dd MMM yyyy' }}</span>
+                </div>
+                <div>
+                  <span class="mcard-label">Payment</span>
+                  <span class="mcard-value">{{ o.paymentMode }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="mcard-footer">
+              <span class="mcard-folio">Folio: {{ o.folioNumber || '—' }}</span>
+              <span class="mcard-action-hint">Tap to view details & actions →</span>
+            </div>
+          </div>
+        </ng-container>
+        <ng-template #noMobileOrders>
+          <div class="empty-note">No orders match this selection.</div>
+        </ng-template>
+      </div>
+
+    </div>
+
+  </div>
+</ng-container>
+
+<!-- ══════════════════════════════════════════════════════════
+     Drawer — Order detail + status timeline
+     ══════════════════════════════════════════════════════════ -->
+<div class="overlay" [class.open]="showDrawer" (click)="closeDrawer()">
+  <div class="drawer" *ngIf="selectedOrder" (click)="$event.stopPropagation()">
+    <div class="drawer-head">
+      <button class="drawer-close" (click)="closeDrawer()">&times;</button>
+      <div class="drawer-eyebrow">{{ selectedOrder.orderNumber }}</div>
+      <div class="drawer-order">{{ selectedOrder.schemeName }}</div>
+      <div class="drawer-investor">{{ selectedOrder.investorName }} · Folio {{ selectedOrder.folioNumber || '—' }}</div>
+    </div>
+
+    <div class="drawer-body">
+      <div class="drawer-stats">
+        <div>
+          <div class="dstat-label">Amount</div>
+          <div class="dstat-value num">₹{{ selectedOrder.investedAmount | number:'1.2-2' }}</div>
+        </div>
+        <div>
+          <div class="dstat-label">Payment</div>
+          <div class="dstat-value">{{ selectedOrder.paymentMode }}<ng-container *ngIf="selectedOrder.chequeNumber"> · {{ selectedOrder.chequeNumber }}</ng-container></div>
+        </div>
+        <div>
+          <div class="dstat-label">Purchase NAV</div>
+          <div class="dstat-value num">{{ selectedOrder.purchaseNAV ? ('₹' + (selectedOrder.purchaseNAV | number:'1.4-4')) : '—' }}</div>
+        </div>
+        <div>
+          <div class="dstat-label">Units Allotted</div>
+          <div class="dstat-value num">{{ selectedOrder.unitsAllotted ? (selectedOrder.unitsAllotted | number:'1.3-3') : '—' }}</div>
+        </div>
+      </div>
+
+      <ul class="timeline">
+        <li *ngFor="let stage of stages; let i = index">
+          <div class="tl-dot"
+               [class.done]="isStageDone(selectedOrder, stage)"
+               [class.current]="isStageCurrent(selectedOrder, stage)">
+            <ng-container *ngIf="isStageDone(selectedOrder, stage); else dotNum">&#10003;</ng-container>
+            <ng-template #dotNum>{{ i + 1 }}</ng-template>
+          </div>
+          <div>
+            <div class="tl-title">{{ stage.label }}</div>
+            <div class="tl-detail">{{ stageDetail(selectedOrder, stage) }}</div>
+          </div>
+        </li>
+      </ul>
+
+      <!-- Next-step action -->
+      <div class="action-card" *ngIf="auth.isAdmin() && nextAction && selectedOrder.status !== 'Cancelled'">
+        <ng-container *ngIf="nextAction.key === 'Assigned'">
+          <h4>Assign field staff</h4>
+          <div class="field">
+            <label>Staff name</label>
+            <input type="text" [(ngModel)]="stageActionValue['staff']" placeholder="e.g. Ravi Kumar" />
+          </div>
+          <button class="btn-primary" (click)="advanceOrder()">Assign &amp; notify</button>
+        </ng-container>
+
+        <ng-container *ngIf="nextAction.key === 'Submitted'">
+          <h4>Mark as submitted</h4>
+          <div class="field">
+            <label>Reference (cheque no. / txn ID)</label>
+            <input type="text" [(ngModel)]="stageActionValue['reference']" placeholder="e.g. 004521" />
+          </div>
+          <button class="btn-primary" (click)="advanceOrder()">Confirm submission</button>
+        </ng-container>
+
+        <ng-container *ngIf="nextAction.key === 'Verified'">
+          <h4>Admin verification</h4>
+          <div class="action-hint">Confirm the submitted form and cheque details before reporting to the family.</div>
+          <button class="btn-primary" (click)="advanceOrder()">Verify &amp; complete</button>
+        </ng-container>
+
+        <button class="cancel-btn"
+                *ngIf="selectedOrder.status === 'Requested' || selectedOrder.status === 'Assigned'"
+                (click)="cancelOrder()">Cancel order</button>
+      </div>
+
+      <div class="completed-note" *ngIf="selectedOrder.status === 'Active'">
+        Verified and active in {{ selectedOrder.investorName }}'s portfolio.
+      </div>
+      <div class="completed-note cancelled" *ngIf="selectedOrder.status === 'Cancelled'">
+        This order was cancelled.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     New order modal
+     ══════════════════════════════════════════════════════════ -->
+<div class="overlay center" [class.open]="showNewOrderModal" (click)="closeNewOrderModal()">
+  <div class="modal" *ngIf="showNewOrderModal" [formGroup]="newOrderForm" (click)="$event.stopPropagation()">
+    <button class="modal-close" (click)="closeNewOrderModal()">&times;</button>
+    <h3>New order</h3>
+    <div class="modal-sub">Log an investment instruction from the head of family</div>
+
+    <div class="modal-section-label">Investor &amp; scheme</div>
+    <div class="field-row">
+      <div class="field">
+        <label>Investor</label>
+        <select formControlName="investorUserId" (change)="onInvestorOrSchemeChanged()">
+          <option value="" disabled>Select investor</option>
+          <option *ngFor="let inv of investors" [value]="inv.userId">
+            {{ inv.fullName }}<ng-container *ngIf="inv.relation"> ({{ inv.relation }})</ng-container>
+          </option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Scheme</label>
+        <select formControlName="schemeCode" (change)="onInvestorOrSchemeChanged()">
+          <option value="" disabled>Select scheme</option>
+          <option *ngFor="let s of schemes" [value]="s.schemeCode">{{ s.schemeName }} — {{ s.fundName }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="modal-section-label">Amount &amp; payment</div>
+    <div class="field-row">
+      <div class="field">
+        <label>Amount (₹)</label>
+        <input type="number" class="num" formControlName="investedAmount" placeholder="e.g. 5000" />
+      </div>
+      <div class="field">
+        <label>Order date</label>
+        <input type="date" formControlName="orderDate" />
+      </div>
+    </div>
+    <div class="field">
+      <label>Payment mode</label>
+      <div class="mode-toggle">
+        <button type="button" class="mode-btn"
+                [class.selected]="newOrderForm.get('paymentMode')?.value !== 'Cheque'"
+                (click)="setPaymentMode('Online')">Online</button>
+        <button type="button" class="mode-btn"
+                [class.selected]="newOrderForm.get('paymentMode')?.value === 'Cheque'"
+                (click)="setPaymentMode('Cheque')">Cheque</button>
+      </div>
+    </div>
+    <div class="cheque-fields" [class.show]="newOrderForm.get('paymentMode')?.value === 'Cheque'">
+      <div class="field-row">
+        <div class="field"><label>Cheque number</label><input type="text" formControlName="chequeNumber" placeholder="e.g. 004521" /></div>
+        <div class="field"><label>Bank</label><input type="text" formControlName="bankName" placeholder="e.g. HDFC Bank" /></div>
+      </div>
+    </div>
+
+    <div class="modal-section-label">Folio &amp; valuation</div>
+    <div class="field-row">
+      <div class="field">
+        <label>Folio</label>
+        <select *ngIf="!useNewFolio && existingFoliosForSelection.length"
+                [value]="newOrderForm.get('folioNumber')?.value"
+                (change)="onFolioSelect($any($event.target).value)">
+          <option value="" disabled>Select existing folio</option>
+          <option *ngFor="let f of existingFoliosForSelection" [value]="f">{{ f }}</option>
+          <option value="__new__">+ New folio</option>
+        </select>
+        <input *ngIf="useNewFolio || !existingFoliosForSelection.length"
+               type="text" formControlName="folioNumber" placeholder="e.g. 10579429/17" />
+      </div>
+      <div class="field">
+        <label>Purchase NAV (₹)</label>
+        <input type="number" step="0.0001" class="num" formControlName="purchaseNAV" />
+      </div>
+    </div>
+
+    <div class="units-preview">
+      <span>Units to be allotted</span>
+      <span class="num">{{ (previewUnits ?? 0) | number:'1.3-3' }}</span>
+    </div>
+
+    <div class="modal-section-label">Status</div>
+    <ul class="timeline">
+      <li *ngFor="let stage of stages; let i = index">
+        <div class="tl-dot" [class.current]="i === 0">
+          <ng-container *ngIf="i === 0; else previewNum">1</ng-container>
+          <ng-template #previewNum>{{ i + 1 }}</ng-template>
+        </div>
+        <div>
+          <div class="tl-title">{{ stage.label }}</div>
+          <div class="tl-detail">{{ i === 0 ? 'Instruction logged, awaiting field visit' : 'Pending' }}</div>
+        </div>
+      </li>
+    </ul>
+
+    <button class="btn-primary" [disabled]="submittingOrder" (click)="submitNewOrder()">
+      {{ submittingOrder ? 'Logging…' : 'Log order' }}
+    </button>
+  </div>
+</div>

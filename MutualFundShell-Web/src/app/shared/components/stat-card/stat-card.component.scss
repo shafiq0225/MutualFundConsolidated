@@ -1,0 +1,139 @@
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.stat-card {
+  @include card;
+  border-left: 3px solid $gold;
+  padding: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  transition: $transition-base;
+  cursor: default;
+
+  &:hover {
+    box-shadow: $shadow-md;
+  }
+
+  // ── Color variants ────────────────────────────────────────────
+  &--primary .stat-card__icon {
+    background: rgba($primary, 0.1);
+    color: $primary;
+  }
+  &--primary .stat-card__value { color: $primary; }
+
+  &--accent .stat-card__icon {
+    background: rgba($accent, 0.1);
+    color: $accent;
+  }
+  &--accent .stat-card__value { color: $accent; }
+
+  &--warning .stat-card__icon {
+    background: rgba($warning, 0.1);
+    color: $warning-dark;
+  }
+  &--warning .stat-card__value { color: $warning-dark; }
+
+  &--danger .stat-card__icon {
+    background: rgba($danger, 0.1);
+    color: $danger;
+  }
+  &--danger .stat-card__value { color: $danger; }
+}
+
+.stat-card__icon {
+  @include flex-center;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  border-radius: 12px;
+  font-size: 20px;
+}
+
+.stat-card__body { flex: 1; }
+
+.stat-card__value {
+  font-family: $font-mono;
+  font-variant-numeric: tabular-nums;
+  font-size: $font-size-3xl;
+  font-weight: 600;
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+
+.stat-card__title {
+  font-size: $font-size-xs;
+  color: $text-muted;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.stat-card__footer {
+  margin-top: 8px;
+  @include flex-start;
+  gap: 6px;
+}
+
+.stat-trend {
+  @include flex-center;
+  gap: 4px;
+  font-size: $font-size-xs;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+
+  &.trend-up   { background: $success-light; color: $success; }
+  &.trend-down { background: $danger-light;  color: $danger; }
+}
+
+.stat-subtitle {
+  font-size: $font-size-xs;
+  color: $text-muted;
+}
+
+// ── Skeleton ─────────────────────────────────────────────────────
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+
+  &-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+  }
+  &-value { height: 32px; width: 80px; margin-bottom: 8px; }
+  &-title { height: 14px; width: 120px; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+// At bottom of existing file, add:
+
+// ── Mobile compact ────────────────────────────────────────────────
+@media (max-width: 576px) {
+  .stat-card {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .stat-card__icon {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    font-size: 17px;
+  }
+
+  .stat-card__value {
+    font-size: 24px;
+  }
+
+  .stat-card__title {
+    font-size: 11px;
+  }
+}

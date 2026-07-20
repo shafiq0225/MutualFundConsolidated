@@ -1,0 +1,86 @@
+@use 'variables' as *;
+@use 'mixins' as *;
+
+.table-container {
+  @include card;
+  overflow: hidden;
+}
+
+// ── Passbook ledger table ─────────────────────────────────────────
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: $font-size-base;
+
+  th {
+    background: $primary;
+    padding: 11px 16px;
+    font-size: $font-size-xs;
+    font-weight: 500;
+    color: #E8E3D3;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: left;
+    white-space: nowrap;
+    border: none;
+  }
+
+  td {
+    padding: 12px 16px;
+    font-size: $font-size-base;
+    color: $text-primary;
+    border-bottom: 1px solid $border;
+    vertical-align: middle;
+  }
+
+  tbody tr:nth-child(even) td { background: #FCFAF3; }
+
+  tr:last-child td { border-bottom: none; }
+
+  tbody tr { transition: background 0.12s ease; }
+  tbody tr:hover td { background: $success-light; }
+
+  &-striped tr:nth-child(even) td {
+    background: #FCFAF3;
+  }
+}
+
+// ── Status stamps (dashed passbook pills) ─────────────────────────
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: $font-size-xs;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  gap: 5px;
+  border: 1.5px dashed transparent;
+
+  &-success {
+    background: $success-light;
+    color: $success;
+    border-color: $success;
+  }
+  &-warning {
+    background: $warning-light;
+    color: $warning-dark;
+    border-color: $warning;
+  }
+  &-danger {
+    background: $danger-light;
+    color: $danger;
+    border-color: $danger;
+  }
+  &-primary {
+    background: $steel-soft;
+    color: $steel;
+    border-color: $steel;
+  }
+  &-muted {
+    background: $hover-bg;
+    color: $text-muted;
+    border-color: $border-dark;
+  }
+}

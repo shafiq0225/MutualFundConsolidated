@@ -1,0 +1,34 @@
+@use 'variables' as *;
+
+// Fonts (Fraunces / IBM Plex Sans / IBM Plex Mono) are loaded in index.html.
+
+body {
+  font-family: $font-family;
+  font-size: $font-size-base;
+  color: $text-primary;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1 { font-family: $font-display; font-size: $font-size-4xl; font-weight: 600; color: $primary; }
+h2 { font-family: $font-display; font-size: $font-size-2xl; font-weight: 600; color: $text-primary; }
+h3 { font-family: $font-display; font-size: $font-size-lg;  font-weight: 600; color: $text-primary; }
+h4 { font-family: $font-display; font-size: $font-size-md;  font-weight: 600; color: $text-primary; }
+
+p  { font-size: $font-size-base; color: $text-secondary; line-height: 1.6; }
+
+.display   { font-family: $font-display; }
+.num,
+.font-mono { font-family: $font-mono; font-variant-numeric: tabular-nums; }
+
+.text-xs       { font-size: $font-size-xs; }
+.text-sm       { font-size: $font-size-sm; }
+.text-base     { font-size: $font-size-base; }
+.text-lg       { font-size: $font-size-lg; }
+.text-muted    { color: $text-muted; }
+.text-primary  { color: $primary; }
+.text-success  { color: $success; }
+.text-warning  { color: $warning; }
+.text-danger   { color: $danger; }
+.font-medium   { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold     { font-weight: 700; }

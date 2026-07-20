@@ -1,0 +1,327 @@
+<div class="monitor">
+
+    <!-- ── Header ───────────────────────────────────────────────────────── -->
+    <header class="monitor-header">
+        <div class="header-brand">
+            <span class="brand-badge">MF</span>
+            <div>
+                <div class="brand-sub">AMFI NAV Service · .NET 8</div>
+                <div class="brand-title">MutualFundNav Monitor</div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <span class="live-dot"></span>
+            <span class="live-label">Live</span>
+            <button class="btn-refresh" (click)="loadAll()" [disabled]="loading">
+                {{ loading ? 'Loading…' : '⟳ Refresh All' }}
+            </button>
+        </div>
+    </header>
+
+    <!-- ── Global Error ──────────────────────────────────────────────────── -->
+    <div class="global-error" *ngIf="globalError">
+        <span>⚠</span>
+        <div>
+            <strong>Connection Error</strong>
+            <p>{{ globalError }}</p>
+        </div>
+        <button (click)="loadAll()">Retry</button>
+    </div>
+
+    <div class="monitor-body" *ngIf="!loading || !globalError">
+
+        <!-- ══════════════════════════════════════════════════════════════════
+         SECTION 1 — DASHBOARD
+    ══════════════════════════════════════════════════════════════════════ -->
+        <section class="section">
+            <div class="section-title">
+                <span class="section-icon">⬡</span> Dashboard
+            </div>
+
+            <!-- Stat Cards -->
+            <div class="cards">
+                <div class="card" [class.loading]="loading">
+                    <div class="card-label">Last NAV Date</div>
+                    <div class="card-value">{{ loading ? '…' : formatDate(latestNavDate) }}</div>
+                    <div class="card-sub">{{ loading ? '' : formatTime(latestNavDate) }}</div>
+                </div>
+
+                <div class="card" [class.loading]="loading">
+                    <div class="card-label">Next Run In</div>
+                    <div class="card-value countdown">{{ countdown }}</div>
+                    <div class="card-sub">Daily at 05:00 IST</div>
+                </div>
+
+                <div class="card" [class.loading]="loading" [ngClass]="jobStatusClass">
+                    <div class="card-label">Last Job Status</div>
+                    <div class="card-value status-val">
+                        <span class="status-dot" [ngClass]="jobStatusClass"></span>
+                        {{ loading ? '…' : jobStatusLabel }}
+                    </div>
+                    <div class="card-sub" *ngIf="latestJob">
+                        {{ formatDate(latestJob.startedAt) }} · {{ latestJob.elapsedSeconds | number:'1.1-1' }}s
+                    </div>
+                </div>
+
+                <div class="card" [class.loading]="loading">
+                    <div class="card-label">Target Date</div>
+                    <div class="card-value">{{ loading ? '…' : formatDate(targetDate) }}</div>
+                    <div class="card-sub">Next date to download</div>
+                </div>
+            </div>
+
+            <!-- Trigger Panel -->
+            <div class="trigger-panel">
+                <div class="trigger-panel-title">Manual Trigger</div>
+                <div class="trigger-row">
+                    <button class="btn-primary" (click)="trigger()" [disabled]="triggering">
+                        {{ triggering ? 'Downloading…' : '⚡ Trigger Latest NAV' }}
+                    </button>
+                    <div class="trigger-date-row">
+                        <input type="date" [(ngModel)]="customTriggerDate" />
+                        <button class="btn-secondary" (click)="trigger(customTriggerDate)"
+                            [disabled]="triggering || !customTriggerDate">
+                            Trigger for Date
+                        </button>
+                    </div>
+                </div>
+                <div class="trigger-result success" *ngIf="triggerResult && triggerResult.success">{{ triggerResult.message }}</div>
+                <div class="trigger-result error" *ngIf="triggerResult && !triggerResult.success">{{
+                    triggerResult.message }}</div>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════════════════════
+         SECTION 2 — NAV HISTORY
+    ══════════════════════════════════════════════════════════════════════ -->
+        <section class="section">
+            <div class="section-title">
+                <span class="section-icon">📄</span> NAV History
+                <span class="section-count">{{ navHistory.length }} records</span>
+            </div>
+
+            <div class="table-toolbar">
+                <input class="search-input" placeholder="Search by date…" [(ngModel)]="navSearch"
+                    (input)="applyNavFilter()" />
+            </div>
+
+            <div class="api-error" *ngIf="navError">⚠ {{ navError }}</div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th (click)="navSort('navDate')">NAV Date {{ navSortIcon('navDate') }}</th>
+                            <th (click)="navSort('recordCount')">Records {{ navSortIcon('recordCount') }}</th>
+                            <th (click)="navSort('fileSizeBytes')">File Size {{ navSortIcon('fileSizeBytes') }}</th>
+                            <th (click)="navSort('downloadedAt')">Downloaded {{ navSortIcon('downloadedAt') }}</th>
+                            <th>Holiday</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let r of navFiltered" [class.holiday-row]="r.isHoliday">
+                            <td>{{ formatDate(r.navDate) }}</td>
+                            <td class="num">{{ r.recordCount | number }}</td>
+                            <td class="num">{{ formatBytes(r.fileSizeBytes) }}</td>
+                            <td>{{ formatDateTime(r.downloadedAt) }}</td>
+                            <td class="center">{{ r.isHoliday ? '🏖' : '—' }}</td>
+                        </tr>
+                        <tr *ngIf="navFiltered.length === 0">
+                            <td colspan="5" class="empty">No NAV records found.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════════════════════
+         SECTION 3 — JOB LOGS
+    ══════════════════════════════════════════════════════════════════════ -->
+        <section class="section">
+            <div class="section-title">
+                <span class="section-icon">🗒</span> Job Logs
+                <span class="section-count">
+                    <span class="pill green">✓ {{ successCount }}</span>
+                    <span class="pill red" *ngIf="failureCount > 0">✗ {{ failureCount }}</span>
+                </span>
+            </div>
+
+            <div class="table-toolbar">
+                <select [(ngModel)]="logsCount" (change)="reloadLogs()" class="count-sel">
+                    <option [value]="20">Last 20</option>
+                    <option [value]="50">Last 50</option>
+                    <option [value]="100">Last 100</option>
+                </select>
+                <button class="btn-sm" (click)="reloadLogs()">⟳ Refresh</button>
+            </div>
+
+            <div class="api-error" *ngIf="logsError">⚠ {{ logsError }}</div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Job Name</th>
+                            <th>Started At</th>
+                            <th>Duration</th>
+                            <th>Error</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <ng-container *ngFor="let log of logs">
+                            <tr [class.success-row]="log.isSuccess" [class.failure-row]="!log.isSuccess"
+                                [class.clickable]="!log.isSuccess" (click)="toggleLog(log.id)">
+                                <td class="center">
+                                    <span class="status-dot" [class.green]="log.isSuccess"
+                                        [class.red]="!log.isSuccess"></span>
+                                    {{ log.isSuccess ? 'OK' : 'FAIL' }}
+                                </td>
+                                <td>{{ log.jobName }}</td>
+                                <td>{{ formatDateTime(log.startedAt) }}</td>
+                                <td class="num">{{ duration(log) }}</td>
+                                <td class="error-col">
+                                    <span *ngIf="log.errorMessage" class="error-preview">
+                                        {{ log.errorMessage | slice:0:60 }}{{ log.errorMessage.length > 60 ? '…' : '' }}
+                                    </span>
+                                    <span *ngIf="!log.errorMessage">—</span>
+                                </td>
+                            </tr>
+                            <tr *ngIf="expandedLogId === log.id" class="detail-row">
+                                <td colspan="5">
+                                    <div class="error-detail-box">
+                                        <strong>Error:</strong>
+                                        <pre>{{ log.errorMessage }}</pre>
+                                        <div *ngIf="log.details"><strong>Details:</strong>
+                                            <pre>{{ log.details }}</pre>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </ng-container>
+                        <tr *ngIf="logs.length === 0">
+                            <td colspan="5" class="empty">No job logs yet.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════════════════════
+         SECTION 4 — HOLIDAY STATUS
+    ══════════════════════════════════════════════════════════════════════ -->
+        <section class="section">
+            <div class="section-title">
+                <span class="section-icon">📅</span> Holiday Status
+            </div>
+
+            <div class="trigger-panel">
+                <div class="trigger-row">
+                    <button class="btn-primary" (click)="loadHolidayToday()">⟳ Refresh Today</button>
+                    <div class="trigger-date-row">
+                        <input type="date" [(ngModel)]="tradingCheckDate" />
+                        <button class="btn-secondary" (click)="checkTradingDay()">Check Date</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="api-error" *ngIf="holidayTodayError">⚠ {{ holidayTodayError }}</div>
+            <div class="api-error" *ngIf="tradingDayError">⚠ {{ tradingDayError }}</div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Detail</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngIf="holidayToday">
+                            <td class="status-col">
+                                <span class="status-dot" [class.green]="isHolidayTodayTrading(holidayToday)" [class.red]="!isHolidayTodayTrading(holidayToday)"></span>
+                                {{ getHolidayTodayLabel(holidayToday) }}
+                            </td>
+                            <td>{{ formatDate(holidayToday.date) }}</td>
+                            <td>{{ holidayToday.status }}</td>
+                        </tr>
+                        <tr *ngIf="tradingDayResult">
+                            <td class="status-col">
+                                <span class="status-dot" [class.green]="tradingDayResult.isTradingDay" [class.red]="!tradingDayResult.isTradingDay"></span>
+                                {{ tradingDayResult.isTradingDay ? 'Trading Day' : 'Non-Trading Day' }}
+                            </td>
+                            <td>{{ formatDate(tradingDayResult.date) }}</td>
+                            <td>{{ tradingDayResult.dayOfWeek }}</td>
+                        </tr>
+                        <tr *ngIf="!holidayToday && !tradingDayResult">
+                            <td colspan="3" class="empty">No holiday data available yet.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════════════════════
+         SECTION 5 — KAFKA EVENTS
+    ══════════════════════════════════════════════════════════════════════ -->
+        <section class="section">
+            <div class="section-title">
+                <span class="section-icon">⚡</span> Kafka Events
+                <span class="section-count">
+                    <span class="pill green">✓ {{ kafkaSuccessCount }}</span>
+                    <span class="pill red" *ngIf="kafkaFailCount > 0">✗ {{ kafkaFailCount }}</span>
+                </span>
+            </div>
+
+            <div class="table-toolbar">
+                <select [(ngModel)]="kafkaCount" (change)="reloadKafka()" class="count-sel">
+                    <option [value]="20">Last 20</option>
+                    <option [value]="50">Last 50</option>
+                    <option [value]="100">Last 100</option>
+                </select>
+                <button class="btn-sm" (click)="reloadKafka()">⟳ Refresh</button>
+            </div>
+
+            <div class="api-error" *ngIf="kafkaError">⚠ {{ kafkaError }}</div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Topic</th>
+                            <th>Event Type</th>
+                            <th>Key</th>
+                            <th>Size</th>
+                            <th>Elapsed</th>
+                            <th>Published At</th>
+                            <th>Partition / Offset</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let k of kafkaLogs" [class.success-row]="k.isSuccess"
+                            [class.failure-row]="!k.isSuccess">
+                            <td class="center">
+                                <span class="status-dot" [class.green]="k.isSuccess" [class.red]="!k.isSuccess"></span>
+                                {{ k.isSuccess ? 'OK' : 'FAIL' }}
+                            </td>
+                            <td>{{ k.topic }}</td>
+                            <td>{{ k.eventType }}</td>
+                            <td>{{ k.messageKey }}</td>
+                            <td class="num">{{ formatBytes(k.messageSizeBytes) }}</td>
+                            <td class="num">{{ k.elapsedMs }}ms</td>
+                            <td>{{ formatDateTime(k.publishedAt) }}</td>
+                            <td class="num">{{ k.partition }} / {{ k.offset }}</td>
+                        </tr>
+                        <tr *ngIf="kafkaLogs.length === 0">
+                            <td colspan="8" class="empty">No Kafka events yet.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div><!-- /monitor-body -->
+
+</div><!-- /monitor -->

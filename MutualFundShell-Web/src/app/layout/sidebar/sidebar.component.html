@@ -1,0 +1,40 @@
+<aside class="sidebar" [class.collapsed]="layout.sidebarCollapsed()">
+  <div class="brand">
+    <svg class="brand-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 12H7L9 5L13 19L15 10L17 14H21" stroke="var(--gold, #C08A2E)" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="21" cy="14" r="1.5" fill="#fff" />
+    </svg>
+    @if (!layout.sidebarCollapsed()) {
+      <span class="brand-text">Wealth<span class="gold-text">Pass</span></span>
+    }
+  </div>
+
+  <nav class="nav-list">
+    @for (item of navItems(); track item.route) {
+      <a
+        class="nav-item"
+        [routerLink]="item.route"
+        routerLinkActive="active"
+        [title]="layout.sidebarCollapsed() ? item.label : ''"
+        (click)="layout.closeSidebarOnMobile()"
+      >
+        <i class="fas" [ngClass]="item.icon"></i>
+        @if (!layout.sidebarCollapsed()) {
+          <span class="label">{{ item.label }}</span>
+          @if (item.soon) {
+            <span class="badge">Soon</span>
+          }
+        }
+      </a>
+    }
+  </nav>
+
+  <button
+    class="collapse-toggle"
+    type="button"
+    (click)="layout.toggleSidebar()"
+    [title]="layout.sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+  >
+    <i class="fas" [ngClass]="layout.sidebarCollapsed() ? 'fa-angles-right' : 'fa-angles-left'"></i>
+  </button>
+</aside>

@@ -1,0 +1,28 @@
+<div class="stat-card" [class]="'stat-card--' + color">
+  <!-- Loading skeleton -->
+  <ng-container *ngIf="loading">
+    <div class="skeleton skeleton-icon"></div>
+    <div class="skeleton skeleton-value"></div>
+    <div class="skeleton skeleton-title"></div>
+  </ng-container>
+
+  <!-- Content -->
+  <ng-container *ngIf="!loading">
+    <div class="stat-card__icon">
+      <i class="fas {{ icon }}"></i>
+    </div>
+    <div class="stat-card__body">
+      <div class="stat-card__value">{{ value }}</div>
+      <div class="stat-card__title">{{ title }}</div>
+      <div class="stat-card__footer" *ngIf="trend || subtitle">
+        <span *ngIf="trend" class="stat-trend" [class]="trendClass">
+          <i class="fas {{ trendIcon }}"></i>
+          {{ trendText }}
+        </span>
+        <span *ngIf="subtitle" class="stat-subtitle">
+          {{ subtitle }}
+        </span>
+      </div>
+    </div>
+  </ng-container>
+</div>

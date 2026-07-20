@@ -1,0 +1,117 @@
+<app-loading-spinner *ngIf="loading" message="Loading family groups..."></app-loading-spinner>
+
+<div class="wrap" *ngIf="!loading">
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">User & Family Management</span>
+      <h1 class="display">Family Groups</h1>
+      <p class="sub">{{ groups.length }} group(s) · {{ eligibleUsers.length }} eligible user(s) unassigned</p>
+    </div>
+    <button class="btn-primary" (click)="openCreateModal()">
+      <i class="fas fa-plus"></i> New Group
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <input type="text" placeholder="Search group, head name, PAN..." [(ngModel)]="searchTerm" />
+  </div>
+
+  <div class="group-cards">
+    <div class="group-card" *ngFor="let g of filteredGroups" (click)="openDetail(g)">
+      <div class="group-card-avatar">{{ initials(g.headUserName) }}</div>
+      <div class="group-card-body">
+        <div class="group-card-name display">{{ g.groupName }}</div>
+        <div class="group-card-head muted-sm">Head: {{ g.headUserName }} · {{ g.headPanNumber }}</div>
+        <div class="group-card-meta">
+          <span class="badge badge-steel">{{ g.memberCount }} member(s)</span>
+          <span class="badge" [ngClass]="g.isActive ? 'badge-gain' : 'badge-muted'">{{ g.isActive ? 'Active' : 'Inactive' }}</span>
+        </div>
+      </div>
+      <i class="fas fa-chevron-right"></i>
+    </div>
+    <p class="empty-note" *ngIf="!filteredGroups.length">No family groups match your search.</p>
+  </div>
+</div>
+
+<!-- ── Create Group Modal ─────────────────────────────────────── -->
+<div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal()">
+  <div class="modal" (click)="$event.stopPropagation()" [formGroup]="createForm">
+    <div class="modal-header">
+      <h3 class="display">New Family Group</h3>
+      <button class="icon-btn" (click)="closeCreateModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label>Group Name</label>
+        <input type="text" formControlName="groupName" placeholder="e.g. Sharma Family" />
+      </div>
+      <div class="form-row">
+        <label>Head of Family</label>
+        <select formControlName="headUserId">
+          <option value="" disabled>Select a user</option>
+          <option *ngFor="let u of availableUsersForGroup" [value]="u.id">{{ u.fullName }} — {{ u.email }}</option>
+        </select>
+        <p class="empty-note" *ngIf="!availableUsersForGroup.length" style="padding:8px 0;text-align:left;">
+          No eligible users (approved, role "User", not already in a group).
+        </p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" (click)="closeCreateModal()">Cancel</button>
+      <button class="btn-primary" (click)="submitCreate()">Create Group</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Detail Panel (drawer-style) ────────────────────────────── -->
+<div class="modal-overlay" *ngIf="showDetailPanel" (click)="closeDetail()">
+  <div class="modal detail-modal" (click)="$event.stopPropagation()" *ngIf="selectedGroup">
+    <div class="modal-header">
+      <h3 class="display">{{ selectedGroup.groupName }}</h3>
+      <button class="icon-btn" (click)="closeDetail()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <p class="sub">Head: {{ selectedGroup.headUserName }} ({{ selectedGroup.headUserEmail }})</p>
+
+      <div class="member-list">
+        <div class="member-row" *ngFor="let m of selectedGroup.allMembers">
+          <div class="group-card-avatar sm">{{ initials(m.fullName) }}</div>
+          <div class="member-info">
+            <strong>{{ m.fullName }}</strong>
+            <span class="muted-sm">{{ m.email }}</span>
+          </div>
+          <span class="badge badge-steel">{{ m.displayLabel || m.relationshipType }}</span>
+          <button class="icon-btn" title="Remove" *ngIf="m.relationshipType !== 'Self'" (click)="removeMember(m)">
+            <i class="fas fa-user-minus"></i>
+          </button>
+        </div>
+      </div>
+
+      <button class="link-btn" style="margin-top:12px;" (click)="toggleAddMember()">
+        {{ showAddMember ? '– Cancel' : '+ Add a family member' }}
+      </button>
+
+      <div class="add-member-form" *ngIf="showAddMember" [formGroup]="addMemberForm">
+        <div class="form-row">
+          <label>User</label>
+          <select formControlName="userId">
+            <option value="" disabled>Select a user</option>
+            <option *ngFor="let u of availableUsersForGroup" [value]="u.id">{{ u.fullName }} — {{ u.email }}</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Relationship to Head</label>
+          <select formControlName="relationshipType">
+            <option value="" disabled>Select relationship</option>
+            <option *ngFor="let r of relationshipTypes" [value]="r">{{ r }}</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Display Label (optional)</label>
+          <input type="text" formControlName="displayLabel" placeholder="e.g. Son1" />
+        </div>
+        <button class="btn-primary" (click)="submitAddMember()">Add Member</button>
+      </div>
+    </div>
+  </div>
+</div>

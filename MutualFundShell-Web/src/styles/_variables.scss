@@ -1,0 +1,78 @@
+// ── Brand Colors (Passbook ledger theme) ──────────────────────────
+// Aligned with MutualFundInvestment-Web Order/Investor pages.
+$primary:          #1B2A4A; // ink
+$primary-light:    #5C6EA8; // steel
+$primary-dark:     #142138;
+$primary-hover:    #243A63;
+$accent:           #2F6F62; // gain
+$accent-light:     #3E8878;
+$warning:          #C08A2E; // gold
+$warning-light:    #F6ECD8; // gold-soft
+$warning-dark:     #8A6D2F;
+$danger:           #9C3B26; // loss
+$danger-light:     #F3E4DE; // loss-soft
+$success:          #2F6F62; // gain
+$success-light:    #E4EFEA; // gain-soft
+
+// ── Passbook accents ──────────────────────────────────────────────
+$gold:             #C08A2E;
+$gold-soft:        #F6ECD8;
+$steel:            #5C6EA8;
+$steel-soft:       #E7EAF4;
+
+// ── Neutrals ──────────────────────────────────────────────────────
+$dark:             #1B2A4A;
+$text-primary:     #1B2A4A; // ink
+$text-secondary:   #324268; // ink-soft
+$text-muted:       #6B6455;
+$surface:          #FFFFFF; // paper
+$page-bg:          #FAF6EC; // parchment
+$border:           #DCD3C1; // line
+$border-dark:      #C9BCA0;
+$hover-bg:         #FCFAF3;
+
+// ── Sidebar / top bar ─────────────────────────────────────────────
+$sidebar-bg:       #1B2A4A;
+$sidebar-width:    220px;
+$sidebar-collapsed:64px;
+$sidebar-text:     #B9C3DD;
+$sidebar-active:   #C08A2E;
+$sidebar-hover:    rgba(255,255,255,0.10);
+
+// ── Layout ────────────────────────────────────────────────────────
+$topbar-height:    60px;
+$card-radius:      8px;
+$input-radius:     6px;
+$button-radius:    24px;
+$page-padding:     24px;
+
+// ── Typography ────────────────────────────────────────────────────
+$font-family:      'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+$font-display:     'Fraunces', Georgia, serif;
+$font-mono:        'IBM Plex Mono', 'Courier New', monospace;
+$font-size-xs:     11px;
+$font-size-sm:     12px;
+$font-size-base:   14px;
+$font-size-md:     15px;
+$font-size-lg:     18px;
+$font-size-xl:     20px;
+$font-size-2xl:    24px;
+$font-size-3xl:    28px;
+$font-size-4xl:    32px;
+
+// ── Shadows ───────────────────────────────────────────────────────
+$shadow-sm:   0 1px 3px rgba(27,42,74,0.08);
+$shadow-md:   0 4px 14px rgba(27,42,74,0.10);
+$shadow-lg:   0 12px 40px rgba(27,42,74,0.20);
+$shadow-card: 0 2px 8px  rgba(27,42,74,0.06);
+
+// ── Transitions ───────────────────────────────────────────────────
+$transition-fast:  all 0.15s ease;
+$transition-base:  all 0.25s ease;
+$transition-slow:  all 0.35s ease;
+
+// ── Z-index ───────────────────────────────────────────────────────
+$z-sidebar:  100;
+$z-topbar:   200;
+$z-modal:    300;
+$z-toast:    400;

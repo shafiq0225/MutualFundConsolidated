@@ -1,0 +1,115 @@
+@use '../../../styles/variables' as v;
+
+.topbar {
+  height: v.$topbar-height;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: v.$surface;
+  border-bottom: 1px solid v.$border;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+
+  @media (max-width: 576px) {
+    padding: 0 12px;
+  }
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.page-title {
+  font-family: v.$font-display;
+  font-size: v.$font-size-xl;
+  color: v.$text-primary;
+  font-weight: 600;
+
+  @media (max-width: 576px) {
+    font-size: v.$font-size-lg;
+  }
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  color: v.$text-secondary;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+
+  &:hover { background: v.$hover-bg; }
+}
+
+.account {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: v.$text-primary;
+  font-size: v.$font-size-base;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+
+  &:hover { background: v.$hover-bg; }
+
+  i.fa-circle-user { font-size: 22px; color: v.$steel; }
+  .chevron { font-size: 10px; color: v.$text-muted; }
+
+  @media (max-width: 576px) {
+    span { display: none; }
+  }
+}
+
+.account-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  background: v.$surface;
+  border: 1px solid v.$border;
+  border-radius: 10px;
+  box-shadow: v.$shadow-card;
+  padding: 8px;
+  z-index: 20;
+  cursor: default;
+}
+
+.account-menu-email {
+  padding: 6px 10px 10px;
+  font-size: 12px;
+  color: v.$text-muted;
+  border-bottom: 1px solid v.$border;
+  margin-bottom: 6px;
+  word-break: break-all;
+}
+
+.account-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: v.$font-size-base;
+  color: v.$danger;
+  cursor: pointer;
+
+  &:hover { background: v.$danger-light; }
+}

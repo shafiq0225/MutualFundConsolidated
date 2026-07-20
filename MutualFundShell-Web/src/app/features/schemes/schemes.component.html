@@ -1,0 +1,351 @@
+<app-loading-spinner *ngIf="loading" message="Loading schemes...">
+</app-loading-spinner>
+
+<div *ngIf="!loading">
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div>
+            <h2>Scheme Enrollment</h2>
+            <p>Manage mutual fund scheme enrollments for NAV tracking</p>
+        </div>
+        <button class="btn btn-primary" (click)="openCreateModal()">
+            <i class="fas fa-plus"></i> Enroll Scheme
+        </button>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stat-grid mb-24">
+        <app-stat-card title="Total Schemes" [value]="totalCount" icon="fa-building-columns" color="primary">
+        </app-stat-card>
+        <app-stat-card title="Active" [value]="activeCount" icon="fa-circle-check" color="accent">
+        </app-stat-card>
+        <app-stat-card title="Inactive" [value]="inactiveCount" icon="fa-circle-xmark" color="danger">
+        </app-stat-card>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-24">
+        <div class="filters">
+            <div class="search-box">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="form-control search-input" placeholder="Search by scheme code or name..."
+                    [formControl]="searchCtrl">
+            </div>
+
+            <select class="form-control filter-select" [formControl]="statusFilter">
+                <option value="all">All Status</option>
+                <option value="active">Active Only</option>
+                <option value="inactive">Inactive Only</option>
+            </select>
+
+            <button class="btn btn-ghost btn-sm" (click)="clearFilters()">
+                <i class="fas fa-times"></i> Clear
+            </button>
+
+            <span class="results-count">
+                {{ filtered.length }} of {{ totalCount }} schemes
+            </span>
+        </div>
+    </div>
+
+    <!-- Schemes Table -->
+    <div class="table-container">
+
+        <!-- Empty State -->
+        <div class="empty-state" *ngIf="filtered.length === 0">
+            <i class="fas fa-building-columns"></i>
+            <h3>No schemes found</h3>
+            <p *ngIf="searchCtrl.value || statusFilter.value !== 'all'">
+                Try adjusting your search or filter
+            </p>
+            <p *ngIf="!searchCtrl.value && statusFilter.value === 'all'">
+                No schemes enrolled yet
+            </p>
+            <button class="btn btn-primary btn-sm mt-16" (click)="openCreateModal()">
+                <i class="fas fa-plus"></i> Enroll First Scheme
+            </button>
+        </div>
+
+        <!-- ── Desktop Table (hidden on mobile) ─────────────────── -->
+        <table class="table desktop-table" *ngIf="filtered.length > 0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Scheme Code</th>
+                    <th>Scheme Name</th>
+                    <th>Status</th>
+                    <th>Enrolled On</th>
+                    <th>Last Updated</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let scheme of filtered; let i = index">
+                    <td class="text-muted text-sm">{{ i + 1 }}</td>
+                    <td>
+                        <code class="scheme-code">{{ scheme.schemeCode }}</code>
+                    </td>
+                    <td>
+                        <div class="scheme-name-cell">
+                            <i class="fas fa-building-columns scheme-icon"></i>
+                            <span class="scheme-name">{{ scheme.schemeName }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge" [class.badge-success]="scheme.isApproved"
+                            [class.badge-danger]="!scheme.isApproved">
+                            <i class="fas" [class.fa-circle-check]="scheme.isApproved"
+                                [class.fa-circle-xmark]="!scheme.isApproved"></i>
+                            {{ scheme.isApproved ? 'Active' : 'Inactive' }}
+                        </span>
+                    </td>
+                    <td class="text-sm text-muted">{{ scheme.createdAt | date:'dd MMM yyyy' }}</td>
+                    <td class="text-sm text-muted">
+                        <span *ngIf="scheme.updatedAt">{{ scheme.updatedAt | date:'dd MMM yyyy' }}</span>
+                        <span *ngIf="!scheme.updatedAt">—</span>
+                    </td>
+                    <td>
+                        <div class="action-menu">
+                            <button class="action-btn action-btn-primary" (click)="openEditModal(scheme)"
+                                title="Edit scheme">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                            <button class="action-btn" [class.action-btn-success]="!scheme.isApproved"
+                                [class.action-btn-warning]="scheme.isApproved" (click)="toggleApproval(scheme)"
+                                [title]="scheme.isApproved ? 'Deactivate scheme' : 'Activate scheme'">
+                                <i class="fas" [class.fa-toggle-on]="!scheme.isApproved"
+                                    [class.fa-toggle-off]="scheme.isApproved"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- ── Mobile Accordion (hidden on desktop) ──────────────── -->
+        <div class="accordion-list" *ngIf="filtered.length > 0">
+            <div class="accordion-card" *ngFor="let scheme of filtered; let i = index"
+                [class.is-expanded]="expandedCodes.has(scheme.schemeCode)">
+
+                <!-- Collapsed header — always visible -->
+                <div class="accordion-header" (click)="toggleExpand(scheme.schemeCode)">
+                    <div class="accordion-header__left">
+                        <span class="accordion-index text-muted">{{ i + 1 }}</span>
+                        <div class="accordion-summary">
+                            <code class="scheme-code">{{ scheme.schemeCode }}</code>
+                            <span class="accordion-name">{{ scheme.schemeName }}</span>
+                        </div>
+                    </div>
+                    <div class="accordion-header__right">
+                        <span class="badge" [class.badge-success]="scheme.isApproved"
+                            [class.badge-danger]="!scheme.isApproved">
+                            <i class="fas" [class.fa-circle-check]="scheme.isApproved"
+                                [class.fa-circle-xmark]="!scheme.isApproved"></i>
+                            {{ scheme.isApproved ? 'Active' : 'Inactive' }}
+                        </span>
+                        <i class="fas fa-chevron-down accordion-chevron"></i>
+                    </div>
+                </div>
+
+                <!-- Expanded body — revealed on tap -->
+                <div class="accordion-body">
+                    <div class="accordion-detail-row">
+                        <span class="accordion-detail-label">Enrolled On</span>
+                        <span class="accordion-detail-value">{{ scheme.createdAt | date:'dd MMM yyyy' }}</span>
+                    </div>
+                    <div class="accordion-detail-row">
+                        <span class="accordion-detail-label">Last Updated</span>
+                        <span class="accordion-detail-value">
+                            {{ scheme.updatedAt ? (scheme.updatedAt | date:'dd MMM yyyy') : '—' }}
+                        </span>
+                    </div>
+                    <div class="accordion-actions">
+                        <button class="btn btn-sm btn-ghost" (click)="openEditModal(scheme)">
+                            <i class="fas fa-pen"></i> Edit
+                        </button>
+                        <button class="btn btn-sm" [class.btn-success-soft]="!scheme.isApproved"
+                            [class.btn-warning-soft]="scheme.isApproved" (click)="toggleApproval(scheme)">
+                            <i class="fas" [class.fa-toggle-on]="!scheme.isApproved"
+                                [class.fa-toggle-off]="scheme.isApproved"></i>
+                            {{ scheme.isApproved ? 'Deactivate' : 'Activate' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ── Create Modal ─────────────────────────────────────────── -->
+<div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <h3>
+                <i class="fas fa-plus-circle"></i> Enroll New Scheme
+            </h3>
+            <button class="modal-close" (click)="closeCreateModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="modal-body">
+            <form [formGroup]="createForm" novalidate>
+
+                <!-- Scheme Code -->
+                <div class="form-group">
+                    <label class="form-label">
+                        Scheme Code
+                        <span class="label-hint">AMFI scheme code</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-hashtag input-icon"></i>
+                        <input type="text" class="form-control" [class.is-invalid]="cf['schemeCode'].invalid
+                                       && cf['schemeCode'].touched" formControlName="schemeCode"
+                            placeholder="e.g. 127039" maxlength="20">
+                    </div>
+                    <div class="form-error" *ngIf="cf['schemeCode'].invalid && cf['schemeCode'].touched">
+                        <span *ngIf="cf['schemeCode'].errors?.['required']">
+                            Scheme code is required.
+                        </span>
+                        <span *ngIf="cf['schemeCode'].errors?.['pattern']">
+                            Scheme code must contain only numbers.
+                        </span>
+                        <span *ngIf="cf['schemeCode'].errors?.['minlength']">
+                            Minimum 3 characters.
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Scheme Name -->
+                <div class="form-group">
+                    <label class="form-label">Scheme Name</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-building-columns input-icon"></i>
+                        <input type="text" class="form-control" [class.is-invalid]="cf['schemeName'].invalid
+                                       && cf['schemeName'].touched" formControlName="schemeName"
+                            placeholder="e.g. Motilal Oswal Midcap Fund-Regular Plan-Growth">
+                    </div>
+                    <div class="form-error" *ngIf="cf['schemeName'].invalid && cf['schemeName'].touched">
+                        <span *ngIf="cf['schemeName'].errors?.['required']">
+                            Scheme name is required.
+                        </span>
+                        <span *ngIf="cf['schemeName'].errors?.['minlength']">
+                            Minimum 5 characters.
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Approve immediately -->
+                <div class="form-group">
+                    <label class="toggle-label">
+                        <div class="toggle-info">
+                            <span class="toggle-title">Approve Immediately</span>
+                            <span class="toggle-desc">
+                                NAV data will be tracked as soon as it is received
+                            </span>
+                        </div>
+                        <div class="toggle-control">
+                            <input type="checkbox" id="isApproved" formControlName="isApproved" class="toggle-input">
+                            <label for="isApproved" class="toggle-switch"></label>
+                        </div>
+                    </label>
+                </div>
+
+            </form>
+
+            <!-- Info box -->
+            <div class="info-box">
+                <i class="fas fa-circle-info"></i>
+                <p>
+                    The scheme code must match the exact AMFI code from the
+                    daily NAV file. Once enrolled and approved, NAV data will
+                    be automatically tracked during the next download cycle.
+                </p>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-ghost" (click)="closeCreateModal()">
+                Cancel
+            </button>
+            <button class="btn btn-primary" (click)="submitCreate()" [disabled]="submitting">
+                <i class="fas fa-circle-notch fa-spin" *ngIf="submitting"></i>
+                <i class="fas fa-plus" *ngIf="!submitting"></i>
+                {{ submitting ? 'Enrolling...' : 'Enroll Scheme' }}
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Edit Modal ────────────────────────────────────────────── -->
+<div class="modal-overlay" *ngIf="showEditModal" (click)="closeEditModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <h3>
+                <i class="fas fa-pen"></i> Edit Scheme
+            </h3>
+            <button class="modal-close" (click)="closeEditModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="modal-body" *ngIf="editingScheme">
+
+            <!-- Scheme Code (read only) -->
+            <div class="scheme-readonly">
+                <span class="scheme-readonly__label">Scheme Code</span>
+                <code class="scheme-code">{{ editingScheme.schemeCode }}</code>
+            </div>
+
+            <form [formGroup]="editForm" novalidate>
+
+                <!-- Scheme Name -->
+                <div class="form-group mt-16">
+                    <label class="form-label">Scheme Name</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-building-columns input-icon"></i>
+                        <input type="text" class="form-control" [class.is-invalid]="ef['schemeName'].invalid
+                                       && ef['schemeName'].touched" formControlName="schemeName"
+                            placeholder="Scheme name">
+                    </div>
+                    <div class="form-error" *ngIf="ef['schemeName'].invalid && ef['schemeName'].touched">
+                        <span *ngIf="ef['schemeName'].errors?.['required']">
+                            Scheme name is required.
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Status toggle -->
+                <div class="form-group">
+                    <label class="toggle-label">
+                        <div class="toggle-info">
+                            <span class="toggle-title">Active Status</span>
+                            <span class="toggle-desc">
+                                NAV data will {{ editForm.get('isApproved')?.value
+                                ? 'be tracked' : 'not be tracked' }}
+                            </span>
+                        </div>
+                        <div class="toggle-control">
+                            <input type="checkbox" id="editIsApproved" formControlName="isApproved"
+                                class="toggle-input">
+                            <label for="editIsApproved" class="toggle-switch"></label>
+                        </div>
+                    </label>
+                </div>
+            </form>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-ghost" (click)="closeEditModal()">
+                Cancel
+            </button>
+            <button class="btn btn-primary" (click)="submitEdit()" [disabled]="submitting">
+                <i class="fas fa-circle-notch fa-spin" *ngIf="submitting"></i>
+                <i class="fas fa-save" *ngIf="!submitting"></i>
+                {{ submitting ? 'Saving...' : 'Save Changes' }}
+            </button>
+        </div>
+    </div>
+</div>
