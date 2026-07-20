@@ -1,0 +1,371 @@
+<div class="dashboard-container">
+  <!-- Header Section -->
+  <header class="dashboard-header">
+    <div class="header-content">
+      <div class="user-badge">{{ getUserRoleLabel() }}</div>
+      <h1>Welcome back, {{ getUserName() }}</h1>
+      <p class="header-subtitle">Overview of your mutual fund portfolio, key performance metrics, and system status</p>
+    </div>
+    <div class="header-actions">
+      <span class="last-refreshed">Refreshed: {{ formatDateTime(lastRefreshedDate.toISOString()) }}</span>
+      <button class="btn-refresh" (click)="loadDashboardData()" [disabled]="loading">
+        <span class="refresh-icon" [class.spinning]="loading">⟳</span>
+        {{ loading ? 'Updating…' : 'Refresh' }}
+      </button>
+    </div>
+  </header>
+
+  <!-- Error State -->
+  <div class="error-state" *ngIf="error">
+    <div class="error-content">
+      <span class="error-icon">⚠️</span>
+      <div class="error-text">
+        <strong>Unable to Load Dashboard Data</strong>
+        <p>{{ error }}</p>
+      </div>
+      <button class="btn-retry" (click)="loadDashboardData()">Retry</button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="loading && !dashboardData">
+    <div class="loading-spinner"></div>
+    <p>Gathering portfolio metrics and live data...</p>
+  </div>
+
+  <!-- Main Dashboard Content -->
+  <div class="dashboard-content" *ngIf="dashboardData">
+    
+    <!-- PENDING APPROVALS ALERT BANNER (For Admin/Employee) -->
+    <div class="pending-alert-banner" *ngIf="canViewUsers() && stats?.pendingApprovals && stats!.pendingApprovals > 0">
+      <div class="alert-icon-wrapper">
+        <span class="alert-bell">🔔</span>
+      </div>
+      <div class="alert-details">
+        <h3>{{ stats!.pendingApprovals }} User Account{{ stats!.pendingApprovals > 1 ? 's' : '' }} Pending Admin Approval</h3>
+        <p>New user registration requests require administrative verification before account activation.</p>
+      </div>
+      <button class="btn-alert-action" (click)="navigateToPendingApprovals()">
+        Review & Approve Now →
+      </button>
+    </div>
+
+    <!-- KPI SUMMARY GRID -->
+    <section class="dashboard-section kpi-section">
+      <div class="section-header">
+        <h2>Key Financial Overview</h2>
+        <button class="btn-view-all" (click)="navigateToPortfolio()">View Detailed Portfolio →</button>
+      </div>
+
+      <div class="stats-grid">
+        <!-- Total Investment -->
+        <div class="stat-card primary">
+          <div class="stat-icon-bg">💰</div>
+          <div class="stat-label">Total Investment</div>
+          <div class="stat-value primary-value">{{ formatCurrency(stats?.totalInvested || 0) }}</div>
+          <div class="stat-sub">
+            <span>{{ stats?.totalMembers || 0 }} Member{{ (stats?.totalMembers || 0) !== 1 ? 's' : '' }}</span> • 
+            <span>{{ stats?.totalSchemes || 0 }} Scheme{{ (stats?.totalSchemes || 0) !== 1 ? 's' : '' }}</span>
+          </div>
+        </div>
+
+        <!-- Current Value -->
+        <div class="stat-card" [class.positive]="stats?.isGain" [class.negative]="!stats?.isGain">
+          <div class="stat-icon-bg">📈</div>
+          <div class="stat-label">Current Portfolio Value</div>
+          <div class="stat-value">{{ formatCurrency(stats?.totalCurrentValue || 0) }}</div>
+          <div class="stat-sub pill-badge" [class.positive]="stats?.isGain" [class.negative]="!stats?.isGain">
+            {{ formatPercent(stats?.totalGainPercent || 0) }} Total Return
+          </div>
+        </div>
+
+        <!-- Total Profit / Loss -->
+        <div class="stat-card" [class.positive]="stats?.isGain" [class.negative]="!stats?.isGain">
+          <div class="stat-icon-bg">{{ stats?.isGain ? '✨' : '📉' }}</div>
+          <div class="stat-label">Total Profit / Loss</div>
+          <div class="stat-value">{{ formatCurrency(stats?.totalGain || 0) }}</div>
+          <div class="stat-sub" [class.positive]="stats?.isGain" [class.negative]="!stats?.isGain">
+            <strong>{{ stats?.isGain ? 'Overall Profit' : 'Overall Loss' }}</strong>
+          </div>
+        </div>
+
+        <!-- Orders Overview Card -->
+        <div class="stat-card orders-card" (click)="navigateToOrders()">
+          <div class="stat-icon-bg">📋</div>
+          <div class="stat-label">Order Pipeline</div>
+          <div class="stat-value">{{ stats?.totalOrders || 0 }} <span class="unit-text">Orders</span></div>
+          <div class="stat-sub-grid">
+            <span class="sub-tag warning" *ngIf="stats?.pendingOrders">{{ stats?.pendingOrders }} Pending</span>
+            <span class="sub-tag success" *ngIf="stats?.completedOrders">{{ stats?.completedOrders }} Completed</span>
+            <span class="sub-tag active" *ngIf="stats?.activeOrders">{{ stats?.activeOrders }} Active</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ASSET CATEGORY PERFORMANCE METRICS (Equity, Debt, Gold) -->
+    <section class="dashboard-section allocation-section">
+      <div class="section-header">
+        <div>
+          <h2>Category Performance & Asset Allocation</h2>
+          <p class="section-desc">Key metrics (Total Investment, Current Value, Return) for Equity, Debt, and Gold</p>
+        </div>
+        <button class="btn-view-all" (click)="navigateToPortfolio()">Holdings Detail →</button>
+      </div>
+
+      <!-- Multi-segment visual progress bar (Equity, Debt, Gold) -->
+      <div class="allocation-bar-container">
+        <div class="allocation-bar">
+          <div class="bar-segment equity" 
+               [style.width.%]="stats?.categories?.equity?.portfolioPercentage || 0"
+               [title]="'Equity: ' + (stats?.categories?.equity?.portfolioPercentage || 0) + '%'">
+          </div>
+          <div class="bar-segment debt" 
+               [style.width.%]="stats?.categories?.debt?.portfolioPercentage || 0"
+               [title]="'Debt: ' + (stats?.categories?.debt?.portfolioPercentage || 0) + '%'">
+          </div>
+          <div class="bar-segment gold" 
+               [style.width.%]="stats?.categories?.gold?.portfolioPercentage || 0"
+               [title]="'Gold: ' + (stats?.categories?.gold?.portfolioPercentage || 0) + '%'">
+          </div>
+        </div>
+      </div>
+
+      <!-- Category Cards Grid (Equity, Debt, Gold) -->
+      <div class="category-metrics-grid" *ngIf="stats?.categories">
+        <div class="category-card" *ngFor="let cat of getCategoryList()" [ngClass]="cat.category.toLowerCase()">
+          <!-- Card Top Header -->
+          <div class="cat-header">
+            <div class="cat-title-wrap">
+              <span class="cat-dot" [ngClass]="cat.category.toLowerCase()"></span>
+              <span class="cat-name">{{ cat.category }}</span>
+              <span class="cat-count">({{ cat.schemeCount }} scheme{{ cat.schemeCount !== 1 ? 's' : '' }})</span>
+            </div>
+            <span class="cat-share-badge">{{ cat.portfolioPercentage }}% Share</span>
+          </div>
+
+          <!-- Category Metrics Row -->
+          <div class="cat-metrics-body">
+            <!-- Total Investment -->
+            <div class="metric-box">
+              <span class="m-label">Total Investment</span>
+              <span class="m-val">{{ formatCurrency(cat.totalInvested) }}</span>
+            </div>
+
+            <!-- Current Portfolio Value -->
+            <div class="metric-box">
+              <span class="m-label">Current Value</span>
+              <span class="m-val highlight">{{ formatCurrency(cat.currentValue) }}</span>
+            </div>
+
+            <!-- Total Return -->
+            <div class="metric-box">
+              <span class="m-label">Total Return</span>
+              <div class="m-val-group">
+                <span class="m-val" [class.positive]="cat.isReturnPositive" [class.negative]="!cat.isReturnPositive">
+                  {{ formatCurrency(cat.totalReturn) }}
+                </span>
+                <span class="m-pct-pill" [class.positive]="cat.isReturnPositive" [class.negative]="!cat.isReturnPositive">
+                  {{ formatPercent(cat.totalReturnPercent) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUICK ACTIONS SHORTCUT GRID -->
+    <section class="dashboard-section quick-actions-section">
+      <div class="section-header">
+        <h2>Quick Actions</h2>
+        <span class="section-desc">Shortcuts to key tasks and features</span>
+      </div>
+
+      <div class="actions-grid">
+        <button class="action-card" (click)="navigateToOrders()" *ngIf="canViewOrders()">
+          <div class="action-icon-box gold">➕</div>
+          <div class="action-content">
+            <div class="action-title">Create New Order</div>
+            <div class="action-sub">Submit buy / sell order</div>
+          </div>
+        </button>
+
+        <button class="action-card" (click)="navigateToPendingApprovals()" *ngIf="canViewUsers() && stats?.pendingApprovals && stats!.pendingApprovals > 0">
+          <div class="action-icon-box alert">
+            <span class="badge-count">{{ stats!.pendingApprovals }}</span>
+            👤
+          </div>
+          <div class="action-content">
+            <div class="action-title">Approve Registrations</div>
+            <div class="action-sub">{{ stats!.pendingApprovals }} user request{{ stats!.pendingApprovals > 1 ? 's' : '' }} pending</div>
+          </div>
+        </button>
+
+        <button class="action-card" (click)="navigateToSchemes()">
+          <div class="action-icon-box blue">📊</div>
+          <div class="action-content">
+            <div class="action-title">Compare Schemes & NAV</div>
+            <div class="action-sub">View latest daily NAV rates</div>
+          </div>
+        </button>
+
+        <button class="action-card" (click)="navigateToPortfolio()">
+          <div class="action-icon-box green">💼</div>
+          <div class="action-content">
+            <div class="action-title">Portfolio Holdings</div>
+            <div class="action-sub">View units, NAV & profit/loss</div>
+          </div>
+        </button>
+
+        <button class="action-card" (click)="navigateToFamilyGroups()" *ngIf="canViewUsers()">
+          <div class="action-icon-box purple">👨‍👩‍👧‍👦</div>
+          <div class="action-content">
+            <div class="action-title">Family Groups</div>
+            <div class="action-sub">Manage combined accounts</div>
+          </div>
+        </button>
+
+        <button class="action-card" (click)="navigateToUsers()" *ngIf="canViewUsers()">
+          <div class="action-icon-box steel">⚙️</div>
+          <div class="action-content">
+            <div class="action-title">User Directory</div>
+            <div class="action-sub">Manage accounts & roles</div>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <!-- TWO-COLUMN GRID: RECENT ORDERS & TOP HOLDINGS -->
+    <div class="two-column-grid">
+
+      <!-- Recent Orders Feed -->
+      <section class="dashboard-section flex-section" *ngIf="canViewOrders()">
+        <div class="section-header">
+          <div>
+            <h2>Recent Orders</h2>
+            <p class="section-desc">Latest investment transactions</p>
+          </div>
+          <button class="btn-view-all" (click)="navigateToOrders()">All Orders →</button>
+        </div>
+
+        <div class="activity-container" *ngIf="dashboardData.recentOrders && dashboardData.recentOrders.length > 0; else noOrdersTpl">
+          <div class="activity-list">
+            <div class="activity-item" *ngFor="let order of dashboardData.recentOrders" (click)="navigateToOrders()">
+              <div class="activity-icon-badge">📋</div>
+              <div class="activity-details">
+                <div class="activity-title" [title]="order.schemeName">{{ order.schemeName }}</div>
+                <div class="activity-sub">
+                  <span class="investor-name">{{ order.investorName }}</span> • 
+                  <span class="order-num">{{ order.orderNumber }}</span>
+                </div>
+              </div>
+              <div class="activity-meta">
+                <div class="activity-amount">{{ formatCurrency(order.investedAmount) }}</div>
+                <div class="activity-status" [ngClass]="order.status.toLowerCase()">
+                  {{ order.status }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #noOrdersTpl>
+          <div class="empty-state-box">
+            <span class="empty-icon">📂</span>
+            <p>No recent orders found.</p>
+            <button class="btn-small-cta" (click)="navigateToOrders()" *ngIf="canViewOrders()">Create Order</button>
+          </div>
+        </ng-template>
+      </section>
+
+      <!-- Top / Active Holdings Widget (FIXED OVERFLOW & TRUNCATION) -->
+      <section class="dashboard-section flex-section">
+        <div class="section-header">
+          <div>
+            <h2>Top Investments & Active Holdings</h2>
+            <p class="section-desc">Holdings by portfolio value & returns</p>
+          </div>
+          <button class="btn-view-all" (click)="navigateToPortfolio()">All Holdings →</button>
+        </div>
+
+        <div class="activity-container" *ngIf="dashboardData.recentHoldings && dashboardData.recentHoldings.length > 0; else noHoldingsTpl">
+          <div class="activity-list">
+            <div class="activity-item" *ngFor="let holding of dashboardData.recentHoldings" (click)="navigateToPortfolio()">
+              <div class="activity-icon-badge holding">💼</div>
+              <div class="activity-details">
+                <div class="activity-title" [title]="holding.schemeName">{{ holding.schemeName }}</div>
+                <div class="activity-sub">
+                  <span class="investor-name">{{ holding.investorName }}</span> • 
+                  <span class="units-count">Units: {{ holding.units || 0 }}</span>
+                </div>
+              </div>
+              <div class="activity-meta">
+                <div class="activity-amount">{{ formatCurrency(holding.currentValue || holding.investedAmount) }}</div>
+                <div class="activity-status" [ngClass]="holding.isProfit ? 'positive' : 'negative'">
+                  {{ formatPercent(holding.profitLossPercent) }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #noHoldingsTpl>
+          <div class="empty-state-box">
+            <span class="empty-icon">📈</span>
+            <p>No active investment holdings yet.</p>
+            <button class="btn-small-cta" (click)="navigateToOrders()" *ngIf="canViewOrders()">Start Investing</button>
+          </div>
+        </ng-template>
+      </section>
+
+    </div>
+
+    <!-- USER MANAGEMENT SUMMARY (Admin Only) -->
+    <section class="dashboard-section" *ngIf="canViewUsers()">
+      <div class="section-header">
+        <div>
+          <h2>System Users & Account Status</h2>
+          <p class="section-desc">Overview of registered accounts and active directory</p>
+        </div>
+        <button class="btn-view-all" (click)="navigateToUsers()">User Management →</button>
+      </div>
+
+      <div class="stats-grid users-stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total System Users</div>
+          <div class="stat-value">{{ stats?.totalUsers || 0 }}</div>
+          <div class="stat-sub">Registered user accounts</div>
+        </div>
+
+        <div class="stat-card warning clickable" (click)="navigateToPendingApprovals()" *ngIf="stats?.pendingApprovals && stats!.pendingApprovals > 0">
+          <div class="stat-label">Pending Approval</div>
+          <div class="stat-value highlight-warning">{{ stats?.pendingApprovals }}</div>
+          <div class="stat-sub">Awaiting admin review →</div>
+        </div>
+
+        <div class="stat-card positive">
+          <div class="stat-label">Active Users</div>
+          <div class="stat-value">{{ stats?.activeUsers || 0 }}</div>
+          <div class="stat-sub">Accounts enabled</div>
+        </div>
+      </div>
+
+      <!-- Recent User Registrations -->
+      <div class="recent-users-list" *ngIf="dashboardData.recentUsers && dashboardData.recentUsers.length > 0">
+        <h3>Recently Registered Accounts</h3>
+        <div class="user-chip-grid">
+          <div class="user-chip" *ngFor="let user of dashboardData.recentUsers" (click)="navigateToUsers()">
+            <div class="user-chip-avatar">{{ (user.fullName || user.email || 'U').charAt(0).toUpperCase() }}</div>
+            <div class="user-chip-info">
+              <span class="user-chip-name">{{ user.fullName || user.email }}</span>
+              <span class="user-chip-role">{{ user.roleName || 'User' }} • {{ formatDate(user.createdAt) }}</span>
+            </div>
+            <span class="chip-status" [ngClass]="(user.statusName || '').toLowerCase()">{{ user.statusName || 'Active' }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>

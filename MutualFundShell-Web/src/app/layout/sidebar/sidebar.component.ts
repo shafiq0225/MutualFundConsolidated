@@ -34,7 +34,7 @@ export class SidebarComponent {
   private readonly router = inject(Router);
 
   private readonly allNavItems: NavItem[] = [
-    { label: 'Dashboard', icon: 'fa-gauge-high', route: '/dashboard', soon: true },
+    { label: 'Dashboard', icon: 'fa-gauge-high', route: '/dashboard', soon: false },
     { label: 'User', icon: 'fa-user', route: '/user', soon: false, requiresPermission: 'user.manage' },
     { label: 'Pending Approvals', icon: 'fa-hourglass-half', route: '/pending-approvals', soon: false, requiresPermission: 'user.manage' },
     { label: 'Family Groups', icon: 'fa-people-roof', route: '/family-groups', soon: false, requiresPermission: 'family.manage' },

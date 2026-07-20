@@ -13,6 +13,7 @@ import { PendingComponent } from './features/users/pending/pending.component';
 import { FamilyComponent } from './features/family/family.component';
 import { OrdersComponent } from './features/orders/orders.component';
 import { InvestorComponent } from './features/investor/investor.component';
+import { DashboardComponent } from './features/dashboard/dashboard.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -30,7 +31,7 @@ export const routes: Routes = [
   { path: 'orders', component: OrdersComponent, title: 'Orders', canActivate: [authGuard, requiresPermission('order.view')] },
   { path: 'portfolio', component: InvestorComponent, title: 'Portfolio', canActivate: [authGuard, requiresPermission('investor.view')] },
 
-  { path: 'dashboard', component: PlaceholderComponent, data: { title: 'Dashboard' }, title: 'Dashboard', canActivate: [authGuard] },
+  { path: 'dashboard', component: DashboardComponent, title: 'Dashboard', canActivate: [authGuard] },
 
   { path: '**', redirectTo: 'dashboard' }
 ];

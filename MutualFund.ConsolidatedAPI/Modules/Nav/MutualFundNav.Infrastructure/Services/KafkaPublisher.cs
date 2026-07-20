@@ -11,58 +11,70 @@ namespace MutualFundNav.Infrastructure.Services
 {
     public class KafkaPublisher<T> : IKafkaPublisher<T>, IDisposable
     {
-        private readonly IProducer<string, string> _producer;
+        private readonly IProducer<string, string>? _producer;
         private readonly ILogger<KafkaPublisher<T>> _logger;
+        private readonly bool _enabled;
 
         public KafkaPublisher(IConfiguration configuration, ILogger<KafkaPublisher<T>> logger)
         {
             _logger = logger;
+            _enabled = configuration.GetValue<bool>("Kafka:Enabled", false);
 
-            var config = new ProducerConfig
+            if (!_enabled)
             {
-                BootstrapServers = configuration["Kafka:BootstrapServers"] ?? "127.0.0.1:9092",
-                Acks = Acks.All,
-                EnableIdempotence = true,
-                MessageSendMaxRetries = 3,
-                RetryBackoffMs = 1000,
-                CompressionType = CompressionType.Snappy,
-                BrokerAddressFamily = BrokerAddressFamily.V4,
-                MessageMaxBytes = 20_971_520   // 20 MB — AMFI NAV file is ~1.6 MB uncompressed
-            };
-            var kafkaSection = configuration.GetSection("Kafka");
-            if (!string.IsNullOrEmpty(kafkaSection["SaslUsername"]))
-                config.SaslUsername = kafkaSection["SaslUsername"];
-            if (!string.IsNullOrEmpty(kafkaSection["SaslPassword"]))
-                config.SaslPassword = kafkaSection["SaslPassword"];
-            if (!string.IsNullOrEmpty(kafkaSection["SaslMechanism"]) && 
-                Enum.TryParse<SaslMechanism>(kafkaSection["SaslMechanism"], true, out var mechanism))
-                config.SaslMechanism = mechanism;
-            if (!string.IsNullOrEmpty(kafkaSection["SecurityProtocol"]) && 
-                Enum.TryParse<SecurityProtocol>(kafkaSection["SecurityProtocol"], true, out var protocol))
-                config.SecurityProtocol = protocol;
-            if (!string.IsNullOrEmpty(kafkaSection["EnableSslCertificateVerification"]) && 
-                bool.TryParse(kafkaSection["EnableSslCertificateVerification"], out var verify))
-                config.EnableSslCertificateVerification = verify;
+                _logger.LogInformation("Kafka publishing is disabled in configuration.");
+                return;
+            }
 
-            _logger.LogInformation("Kafka Init: User={User}, PwdLength={Len}, PwdPrefix={Prefix}", 
-                config.SaslUsername, 
-                config.SaslPassword?.Length ?? 0, 
-                config.SaslPassword?.Substring(0, Math.Min(5, config.SaslPassword?.Length ?? 0)));
+            try
+            {
+                var config = new ProducerConfig
+                {
+                    BootstrapServers = configuration["Kafka:BootstrapServers"] ?? "127.0.0.1:9092",
+                    Acks = Acks.All,
+                    EnableIdempotence = true,
+                    MessageSendMaxRetries = 3,
+                    RetryBackoffMs = 1000,
+                    CompressionType = CompressionType.Snappy,
+                    BrokerAddressFamily = BrokerAddressFamily.V4,
+                    MessageMaxBytes = 20_971_520   // 20 MB — AMFI NAV file is ~1.6 MB uncompressed
+                };
 
-            _producer = new ProducerBuilder<string, string>(config)
-                .SetErrorHandler((_, e) =>
-                    _logger.LogError("Kafka producer error [{Code}]: {Reason}", e.Code, e.Reason))
-                .Build();
+                var kafkaSection = configuration.GetSection("Kafka");
+                if (!string.IsNullOrEmpty(kafkaSection["SaslUsername"]))
+                    config.SaslUsername = kafkaSection["SaslUsername"];
+                if (!string.IsNullOrEmpty(kafkaSection["SaslPassword"]))
+                    config.SaslPassword = kafkaSection["SaslPassword"];
+                if (!string.IsNullOrEmpty(kafkaSection["SaslMechanism"]) && 
+                    Enum.TryParse<SaslMechanism>(kafkaSection["SaslMechanism"], true, out var mechanism))
+                    config.SaslMechanism = mechanism;
+                if (!string.IsNullOrEmpty(kafkaSection["SecurityProtocol"]) && 
+                    Enum.TryParse<SecurityProtocol>(kafkaSection["SecurityProtocol"], true, out var protocol))
+                    config.SecurityProtocol = protocol;
+                if (!string.IsNullOrEmpty(kafkaSection["EnableSslCertificateVerification"]) && 
+                    bool.TryParse(kafkaSection["EnableSslCertificateVerification"], out var verify))
+                    config.EnableSslCertificateVerification = verify;
+
+                _producer = new ProducerBuilder<string, string>(config)
+                    .SetErrorHandler((_, e) =>
+                        _logger.LogError("Kafka producer error [{Code}]: {Reason}", e.Code, e.Reason))
+                    .Build();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to initialize Kafka producer. Kafka publishing will be disabled.");
+                _enabled = false;
+            }
         }
 
-        /// <summary>
-        /// Publishes <paramref name="message"/> to Kafka and returns a <see cref="KafkaPublishResult"/>.
-        /// This method never throws — delivery failures are captured in the result so callers
-        /// can persist them to <c>KafkaPublishLogs</c> without an additional try/catch.
-        /// </summary>
         public async Task<KafkaPublishResult> PublishAsync(
             string topic, string key, T message, CancellationToken ct = default)
         {
+            if (!_enabled || _producer == null)
+            {
+                return KafkaPublishResult.Failed("Kafka is disabled in configuration.", 0, 0);
+            }
+
             var json = JsonSerializer.Serialize(message);
             var sizeBytes = (long)Encoding.UTF8.GetByteCount(json);
             var kafkaMsg = new Message<string, string> { Key = key, Value = json };
@@ -101,8 +113,18 @@ namespace MutualFundNav.Infrastructure.Services
 
         public void Dispose()
         {
-            _producer.Flush(TimeSpan.FromSeconds(5));
-            _producer.Dispose();
+            if (_producer != null)
+            {
+                try
+                {
+                    _producer.Flush(TimeSpan.FromSeconds(2));
+                    _producer.Dispose();
+                }
+                catch
+                {
+                    // Ignore disposal errors if Kafka broker is unavailable
+                }
+            }
         }
     }
 }
