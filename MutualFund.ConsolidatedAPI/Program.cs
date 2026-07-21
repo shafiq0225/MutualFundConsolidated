@@ -198,14 +198,21 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // ── CORS ──────────────────────────────────────────────────────────
-var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
-        policy.WithOrigins(allowedOrigins)
+    {
+        policy.SetIsOriginAllowed(origin => 
+            allowedOrigins.Length == 0 || 
+            allowedOrigins.Contains(origin) || 
+            origin.EndsWith(".onrender.com") || 
+            origin.StartsWith("http://localhost:") || 
+            origin.StartsWith("https://localhost:"))
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials());
+              .AllowCredentials();
+    });
 });
 
 var app = builder.Build();
