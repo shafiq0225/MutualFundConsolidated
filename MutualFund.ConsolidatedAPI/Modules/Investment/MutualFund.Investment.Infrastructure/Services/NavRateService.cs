@@ -40,10 +40,10 @@ namespace MutualFund.Investment.Infrastructure.Services
                 // DetailedSchemes is App 2's table — shared DB
                 var sql = @"
                     SELECT ds.SchemeCode, ds.NAV
-                    FROM DetailedSchemes ds
+                    FROM detailedschemes ds
                     INNER JOIN (
                         SELECT SchemeCode, MAX(NavDate) AS LatestDate
-                        FROM DetailedSchemes
+                        FROM detailedschemes
                         WHERE SchemeCode IN @SchemeCodes
                         GROUP BY SchemeCode
                     ) latest

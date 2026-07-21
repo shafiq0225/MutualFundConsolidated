@@ -574,10 +574,10 @@ namespace MutualFund.Investment.Application.Family.Queries
 
             var sql = @"
                 SELECT ps.HoldingId, ps.CurrentNAV, ps.CurrentValue
-                FROM PortfolioSnapshots ps
+                FROM portfoliosnapshots ps
                 INNER JOIN (
                     SELECT HoldingId, MAX(SnapshotDate) AS LatestDate
-                    FROM PortfolioSnapshots
+                    FROM portfoliosnapshots
                     WHERE HoldingId IN @HoldingIds
                     GROUP BY HoldingId
                 ) latest
@@ -604,7 +604,7 @@ namespace MutualFund.Investment.Application.Family.Queries
 
             var sql = @"
                 SELECT SchemeCode, NAV, NavDate
-                FROM DetailedSchemes
+                FROM detailedschemes
                 WHERE SchemeCode IN @SchemeCodes
                   AND NavDate   >= @FromDate
                 ORDER BY SchemeCode, NavDate DESC";
