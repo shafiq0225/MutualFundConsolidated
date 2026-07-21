@@ -185,15 +185,20 @@ namespace MutualFund.Auth.Infrastructure.Data
                 new Permission { Id = 11, Code = "investor.snapshot", Name = "Run Investor Snapshot", Description = "Run investor portfolio snapshot job", CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
             );
 
-            // ── Map all tables to lowercase for Linux MySQL compatibility ────
-            foreach (var entity in builder.Model.GetEntityTypes())
-            {
-                var tableName = entity.GetTableName();
-                if (!string.IsNullOrEmpty(tableName))
-                {
-                    entity.SetTableName(tableName.ToLowerInvariant());
-                }
-            }
+            // ── Map Identity tables explicitly to custom lowercase table names ────
+            builder.Entity<ApplicationUser>().ToTable("users");
+            builder.Entity<IdentityRole>().ToTable("roles");
+            builder.Entity<IdentityUserRole<string>>().ToTable("userroles");
+            builder.Entity<IdentityUserClaim<string>>().ToTable("userclaims");
+            builder.Entity<IdentityUserLogin<string>>().ToTable("userlogins");
+            builder.Entity<IdentityRoleClaim<string>>().ToTable("roleclaims");
+            builder.Entity<IdentityUserToken<string>>().ToTable("usertokens");
+
+            builder.Entity<RefreshToken>().ToTable("refreshtokens");
+            builder.Entity<Permission>().ToTable("permissions");
+            builder.Entity<UserPermission>().ToTable("userpermissions");
+            builder.Entity<FamilyGroup>().ToTable("familygroups");
+            builder.Entity<FamilyMember>().ToTable("familymembers");
         }
     }
 }
