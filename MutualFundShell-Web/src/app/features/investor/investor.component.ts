@@ -126,6 +126,24 @@ export class InvestorComponent implements OnInit {
   // View state
   showDetailView = false;
 
+  // Instant hover tooltip state
+  activeTooltip: { label: string; value: string; color: string; x: number; y: number } | null = null;
+
+  onArcHover(event: MouseEvent, arc: DonutArc): void {
+    if (!arc.label || !arc.value) return;
+    this.activeTooltip = {
+      label: arc.label,
+      value: arc.value,
+      color: arc.color,
+      x: event.clientX,
+      y: event.clientY
+    };
+  }
+
+  onArcLeave(): void {
+    this.activeTooltip = null;
+  }
+
   constructor(
     private familyService: FamilyPortfolioService,
     private holdingsService: HoldingsService,

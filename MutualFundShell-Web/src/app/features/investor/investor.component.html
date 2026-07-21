@@ -9,8 +9,9 @@
             [attr.stroke]="a.color" [attr.stroke-width]="d.thickness"
             [attr.stroke-dasharray]="a.dasharray" [attr.stroke-dashoffset]="a.dashoffset"
             [attr.transform]="'rotate(-90 ' + d.cx + ' ' + d.cy + ')'"
+            (mousemove)="onArcHover($event, a)"
+            (mouseleave)="onArcLeave()"
             class="donut-segment">
-      <title>{{ a.label }}: {{ a.value }}</title>
     </circle>
   </svg>
 </ng-template>
@@ -301,4 +302,11 @@
     </div>
   </div>
 
+</div>
+
+<!-- ===== Instant Custom Floating Chart Tooltip ===== -->
+<div class="chart-tooltip" *ngIf="activeTooltip" [style.left.px]="activeTooltip.x" [style.top.px]="activeTooltip.y">
+  <span class="tooltip-dot" [style.background]="activeTooltip.color"></span>
+  <span class="tooltip-label">{{ activeTooltip.label }}:</span>
+  <span class="tooltip-val">{{ activeTooltip.value }}</span>
 </div>

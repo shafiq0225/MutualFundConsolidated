@@ -82,17 +82,67 @@ input.date-filter {
 
 .donuts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
 
+.donut-chart {
+  overflow: visible !important;
+  flex-shrink: 0;
+  margin: 4px;
+}
+
 .donut-segment {
   cursor: pointer;
-  transition: stroke-width 0.22s cubic-bezier(0.4, 0, 0.2, 1), filter 0.22s ease;
+  transition: stroke-width 0.18s ease-out, filter 0.18s ease-out;
 
   &:hover {
     stroke-width: 17px !important;
-    filter: brightness(1.15) saturate(1.1);
+    filter: brightness(1.2) drop-shadow(0 0 4px rgba(255, 255, 255, 0.4));
   }
 }
 .scheme-card .donut-segment:hover {
   stroke-width: 11px !important;
+  filter: brightness(1.2) drop-shadow(0 0 3px rgba(0, 0, 0, 0.2));
+}
+
+.chart-tooltip {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  background: rgba(17, 27, 46, 0.95);
+  backdrop-filter: blur(6px);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transform: translate(-50%, -130%);
+  white-space: nowrap;
+  animation: tooltipFadeIn 0.12s ease-out;
+
+  .tooltip-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .tooltip-label {
+    color: #B9C3DD;
+    font-size: 11.5px;
+    font-weight: 500;
+  }
+  .tooltip-val {
+    color: #FFFFFF;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+  }
+}
+
+@keyframes tooltipFadeIn {
+  from { opacity: 0; transform: translate(-50%, -120%); }
+  to   { opacity: 1; transform: translate(-50%, -130%); }
 }
 .donut-panel {
   background: rgba(255,255,255,0.045); border: 1px solid rgba(255,255,255,0.09);
