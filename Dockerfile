@@ -5,7 +5,7 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copy solution props and project file for caching restore layer
-COPY Directory.Build.props ./ 2>/dev/null || :
+COPY Directory.Build.props ./
 COPY MutualFund.ConsolidatedAPI/MutualFund.ConsolidatedAPI.csproj MutualFund.ConsolidatedAPI/
 
 # Restore dependencies
