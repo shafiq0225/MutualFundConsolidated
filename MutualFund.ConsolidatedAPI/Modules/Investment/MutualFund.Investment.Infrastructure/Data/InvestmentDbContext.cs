@@ -1,4 +1,4 @@
-﻿using MutualFund.Investment.Domain.Entities;
+using MutualFund.Investment.Domain.Entities;
 using MutualFund.Investment.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,6 +21,15 @@ namespace MutualFund.Investment.Infrastructure.Data
             // Apply all entity configurations from this assembly
             modelBuilder.ApplyConfigurationsFromAssembly(
                 typeof(InvestmentDbContext).Assembly);
+
+            foreach (var entity in modelBuilder.Model.GetEntityTypes())
+            {
+                var tableName = entity.GetTableName();
+                if (!string.IsNullOrEmpty(tableName))
+                {
+                    entity.SetTableName(tableName.ToLowerInvariant());
+                }
+            }
         }
     }
 }

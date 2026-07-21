@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using MutualFund.Scheme.Domain.Entities;
 
 namespace MutualFund.Scheme.Infrastructure.Data
@@ -44,12 +44,21 @@ namespace MutualFund.Scheme.Infrastructure.Data
 
             modelBuilder.Entity<MarketHoliday>(entity =>
             {
-                entity.ToTable("SchemeApiMarketHolidays");
+                entity.ToTable("schemeapimarketholidays");
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.HolidayDate).IsUnique();
                 entity.Property(e => e.Source).HasMaxLength(100);
                 entity.Property(e => e.ReceivedAt).HasDefaultValueSql("UTC_TIMESTAMP()");
             });
+
+            foreach (var entity in modelBuilder.Model.GetEntityTypes())
+            {
+                var tableName = entity.GetTableName();
+                if (!string.IsNullOrEmpty(tableName))
+                {
+                    entity.SetTableName(tableName.ToLowerInvariant());
+                }
+            }
         }
     }
 }

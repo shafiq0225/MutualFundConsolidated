@@ -68,6 +68,15 @@ namespace MutualFundNav.Infrastructure.Data
                 e.Property(x => x.PublishedAt).IsRequired();
                 e.Property(x => x.CreatedAt).HasDefaultValueSql("UTC_TIMESTAMP()");
             });
+
+            foreach (var entity in modelBuilder.Model.GetEntityTypes())
+            {
+                var tableName = entity.GetTableName();
+                if (!string.IsNullOrEmpty(tableName))
+                {
+                    entity.SetTableName(tableName.ToLowerInvariant());
+                }
+            }
         }
     }
 }

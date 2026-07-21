@@ -185,14 +185,15 @@ namespace MutualFund.Auth.Infrastructure.Data
                 new Permission { Id = 11, Code = "investor.snapshot", Name = "Run Investor Snapshot", Description = "Run investor portfolio snapshot job", CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
             );
 
-            // ── Rename Identity tables (optional — cleaner names) ────
-            builder.Entity<ApplicationUser>().ToTable("Users");
-            builder.Entity<IdentityRole>().ToTable("Roles");
-            builder.Entity<IdentityUserRole<string>>().ToTable("UserRoles");
-            builder.Entity<IdentityUserClaim<string>>().ToTable("UserClaims");
-            builder.Entity<IdentityUserLogin<string>>().ToTable("UserLogins");
-            builder.Entity<IdentityRoleClaim<string>>().ToTable("RoleClaims");
-            builder.Entity<IdentityUserToken<string>>().ToTable("UserTokens");
+            // ── Map all tables to lowercase for Linux MySQL compatibility ────
+            foreach (var entity in builder.Model.GetEntityTypes())
+            {
+                var tableName = entity.GetTableName();
+                if (!string.IsNullOrEmpty(tableName))
+                {
+                    entity.SetTableName(tableName.ToLowerInvariant());
+                }
+            }
         }
     }
 }
