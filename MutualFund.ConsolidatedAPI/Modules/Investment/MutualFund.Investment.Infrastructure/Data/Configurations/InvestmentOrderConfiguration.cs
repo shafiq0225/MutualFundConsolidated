@@ -1,4 +1,4 @@
-﻿using MutualFund.Investment.Domain.Entities;
+using MutualFund.Investment.Domain.Entities;
 using MutualFund.Investment.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -10,7 +10,7 @@ namespace MutualFund.Investment.Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<InvestmentOrder> builder)
         {
-            builder.ToTable("InvestmentOrders");
+            builder.ToTable("investmentorders");
 
             builder.HasKey(x => x.Id);
 

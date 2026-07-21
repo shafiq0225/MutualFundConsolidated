@@ -1,4 +1,4 @@
-﻿using MutualFund.Investment.Domain.Entities;
+using MutualFund.Investment.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -9,7 +9,7 @@ namespace MutualFund.Investment.Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<PortfolioSnapshot> builder)
         {
-            builder.ToTable("PortfolioSnapshots");
+            builder.ToTable("portfoliosnapshots");
 
             builder.HasKey(x => x.Id);
 
