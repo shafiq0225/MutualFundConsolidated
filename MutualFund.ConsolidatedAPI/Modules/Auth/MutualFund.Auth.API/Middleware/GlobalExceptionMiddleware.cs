@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Text.Json;
 using MutualFund.Auth.Application.DTOs;
 using MutualFund.Auth.Domain.Exceptions;
@@ -54,7 +54,7 @@ namespace MutualFund.Auth.API.Middleware
                 _ => new ErrorResponseDto
                 {
                     ErrorCode = "INTERNAL_SERVER_ERROR",
-                    Message = "An unexpected error occurred. Please try again.",
+                    Message = exception.Message ?? "An unexpected error occurred. Please try again.",
                     StatusCode = 500,
                     TraceId = traceId
                 }

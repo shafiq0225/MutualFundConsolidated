@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using MutualFund.Auth.Domain.Entities;
 using MutualFund.Auth.Domain.Enums;
 using Microsoft.Extensions.Configuration;
@@ -32,8 +32,16 @@ namespace MutualFund.Auth.API.Services
             var existing = await userManager.FindByEmailAsync(adminEmail);
             if (existing != null)
             {
-                logger.LogInformation(
-                    "Admin user already exists — skipping seed.");
+                if (!await userManager.CheckPasswordAsync(existing, adminPassword))
+                {
+                    var token = await userManager.GeneratePasswordResetTokenAsync(existing);
+                    await userManager.ResetPasswordAsync(existing, token, adminPassword);
+                    logger.LogInformation("Admin user password synced.");
+                }
+                else
+                {
+                    logger.LogInformation("Admin user already exists and password is valid.");
+                }
                 return;
             }
 
