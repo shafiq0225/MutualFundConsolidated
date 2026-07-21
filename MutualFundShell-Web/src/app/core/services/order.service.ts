@@ -6,7 +6,7 @@ import { InvestmentOrderDto, CreateOrderDto, UpdateOrderStatusDto } from '../mod
 
 @Injectable({ providedIn: 'root' })
 export class OrderService {
-  private readonly api = `${environment.investmentApiUrl}/api/orders`;
+  private readonly api = `${environment.apiUrl}/api/orders`;
 
   constructor(private http: HttpClient) {}
 

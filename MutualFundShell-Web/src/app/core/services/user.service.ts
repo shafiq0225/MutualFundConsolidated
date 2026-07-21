@@ -6,7 +6,7 @@ import { RejectUserDto, UpdateRoleDto, UserDto } from '../models/user.model';
 
 @Injectable({ providedIn: 'root' })
 export class UserService {
-  private readonly api = `${environment.authApiUrl}/api/users`;
+  private readonly api = `${environment.apiUrl}/api/users`;
 
   constructor(private http: HttpClient) {}
 

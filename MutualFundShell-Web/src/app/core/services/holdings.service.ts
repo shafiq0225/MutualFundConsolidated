@@ -6,7 +6,7 @@ import { HoldingDto } from '../models/holding.model';
 
 @Injectable({ providedIn: 'root' })
 export class HoldingsService {
-  private readonly api = `${environment.investmentApiUrl}/api/portfolio/holdings`;
+  private readonly api = `${environment.apiUrl}/api/portfolio/holdings`;
 
   constructor(private http: HttpClient) {}
 

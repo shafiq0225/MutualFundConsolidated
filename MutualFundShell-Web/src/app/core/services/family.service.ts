@@ -6,7 +6,7 @@ import { AddFamilyMemberDto, CreateFamilyGroupDto, FamilyGroupDto } from '../mod
 
 @Injectable({ providedIn: 'root' })
 export class FamilyService {
-  private readonly api = `${environment.authApiUrl}/api/family`;
+  private readonly api = `${environment.apiUrl}/api/family`;
 
   constructor(private http: HttpClient) {}
 

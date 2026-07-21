@@ -70,10 +70,10 @@ export interface KafkaPublishLog {
 
 @Injectable({ providedIn: 'root' })
 export class MfNavService {
-    private nav = `${environment.apiBaseUrl}/api/nav`;
-    private jobs = `${environment.apiBaseUrl}/api/jobs`;
-    private holidays = `${environment.apiBaseUrl}/api/Holidays`;
-    private kafka = `${environment.apiBaseUrl}/api/kafka`;
+    private nav = `${environment.apiUrl}/api/nav`;
+    private jobs = `${environment.apiUrl}/api/jobs`;
+    private holidays = `${environment.apiUrl}/api/Holidays`;
+    private kafka = `${environment.apiUrl}/api/kafka`;
 
     constructor(private http: HttpClient) { }
 

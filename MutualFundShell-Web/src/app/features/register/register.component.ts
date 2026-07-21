@@ -41,7 +41,7 @@ export class RegisterComponent {
   isLoading = false;
   showPassword = false;
   showConfirmPassword = false;
-  private readonly authApi = `${environment.authApiUrl}/api/auth`;
+  private readonly authApi = `${environment.apiUrl}/api/auth`;
 
   private readonly router = inject(Router, { optional: true });
 

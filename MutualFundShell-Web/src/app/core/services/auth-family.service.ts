@@ -13,7 +13,7 @@ import { AuthFamilyGroupDto, AuthFamilyMemberDto } from '../models/auth-family.m
  */
 @Injectable({ providedIn: 'root' })
 export class AuthFamilyService {
-  private readonly api = `${environment.authApiUrl}/api/family`;
+  private readonly api = `${environment.apiUrl}/api/family`;
 
   constructor(private http: HttpClient) {}
 

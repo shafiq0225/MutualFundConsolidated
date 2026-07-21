@@ -6,8 +6,8 @@ import { FamilyOverviewDto, MemberHoldingsDto } from '../models/family-portfolio
 
 @Injectable({ providedIn: 'root' })
 export class FamilyPortfolioService {
-  private readonly api = `${environment.investmentApiUrl}/api/familyportfolio`;
-  private readonly jobsApi = `${environment.investmentApiUrl}/api/jobs`;
+  private readonly api = `${environment.apiUrl}/api/familyportfolio`;
+  private readonly jobsApi = `${environment.apiUrl}/api/jobs`;
 
   constructor(private http: HttpClient) {}
 

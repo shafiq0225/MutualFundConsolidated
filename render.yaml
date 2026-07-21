@@ -1,0 +1,28 @@
+services:
+  # ============================================================================
+  # 1. Consolidated Monolith Backend API (1 Web Service = 744 hrs / 750 hrs free)
+  # ============================================================================
+  - type: web
+    name: mutualfund-api
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /swagger/index.html
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__DefaultConnection
+        sync: false  # User provides production MySQL connection string in Render Dashboard
+
+  # ============================================================================
+  # 2. Angular Frontend Shell (Static Site = 0 Compute Hours / Free Forever)
+  # ============================================================================
+  - type: static
+    name: mutualfund-ui
+    rootDir: MutualFundShell-Web
+    buildCommand: npm install && npm run build -- --configuration=production
+    staticPublishPath: ./dist/mutualfund-shell-web/browser
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

@@ -6,7 +6,7 @@ import { AssignPermissionDto, PermissionDto, UserPermissionDto } from '../models
 
 @Injectable({ providedIn: 'root' })
 export class PermissionService {
-  private readonly api = `${environment.authApiUrl}/api/permissions`;
+  private readonly api = `${environment.apiUrl}/api/permissions`;
 
   constructor(private http: HttpClient) {}
 
