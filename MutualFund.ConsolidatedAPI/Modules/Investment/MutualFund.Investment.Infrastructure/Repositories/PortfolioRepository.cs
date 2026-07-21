@@ -37,6 +37,34 @@ namespace MutualFund.Investment.Infrastructure.Repositories
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<Dictionary<int, PortfolioSnapshot>> GetLatestForHoldingsAsync(
+            IEnumerable<int> holdingIds)
+        {
+            var idsList = holdingIds.Distinct().ToList();
+            if (idsList.Count == 0) return new Dictionary<int, PortfolioSnapshot>();
+
+            var maxDates = await _context.PortfolioSnapshots
+                .AsNoTracking()
+                .Where(s => idsList.Contains(s.HoldingId))
+                .GroupBy(s => s.HoldingId)
+                .Select(g => new { HoldingId = g.Key, MaxDate = g.Max(x => x.SnapshotDate) })
+                .ToListAsync();
+
+            if (maxDates.Count == 0) return new Dictionary<int, PortfolioSnapshot>();
+
+            var maxDatesList = maxDates.Select(m => m.MaxDate).Distinct().ToList();
+            var candidateSnapshots = await _context.PortfolioSnapshots
+                .AsNoTracking()
+                .Where(s => idsList.Contains(s.HoldingId) && maxDatesList.Contains(s.SnapshotDate))
+                .ToListAsync();
+
+            var maxDict = maxDates.ToDictionary(x => x.HoldingId, x => x.MaxDate);
+            return candidateSnapshots
+                .Where(s => maxDict.TryGetValue(s.HoldingId, out var maxDate) && s.SnapshotDate == maxDate)
+                .GroupBy(s => s.HoldingId)
+                .ToDictionary(g => g.Key, g => g.First());
+        }
+
         public async Task<IEnumerable<PortfolioSnapshot>> GetByInvestorAsync(
             string investorUserId,
             DateTime? date = null)

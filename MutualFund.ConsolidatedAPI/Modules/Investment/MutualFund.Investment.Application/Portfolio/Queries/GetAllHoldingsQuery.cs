@@ -1,4 +1,4 @@
-﻿using MutualFund.Investment.Application.Portfolio.Dtos;
+using MutualFund.Investment.Application.Portfolio.Dtos;
 using MutualFund.Investment.Domain.Common;
 using MutualFund.Investment.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -25,19 +25,16 @@ namespace MutualFund.Investment.Application.Portfolio.Queries
         {
             try
             {
-                var holdings = await _unitOfWork.Holdings
-                    .GetAllActiveAsync();
+                var holdingsList = (await _unitOfWork.Holdings.GetAllActiveAsync()).ToList();
+                var holdingIds = holdingsList.Select(h => h.Id);
+                var snapshotsDict = await _unitOfWork.Portfolio.GetLatestForHoldingsAsync(holdingIds);
 
-                var result = new List<HoldingDto>();
-
-                foreach (var holding in holdings)
-                {
-                    var snapshot = await _unitOfWork.Portfolio
-                        .GetLatestByHoldingAsync(holding.Id);
-
-                    result.Add(PortfolioMapper
-                        .ToHoldingDto(holding, snapshot));
-                }
+                var result = holdingsList.Select(holding =>
+                    PortfolioMapper.ToHoldingDto(
+                        holding,
+                        snapshotsDict.TryGetValue(holding.Id, out var snapshot) ? snapshot : null
+                    )
+                ).ToList();
 
                 return Result<IEnumerable<HoldingDto>>
                     .Success(result);

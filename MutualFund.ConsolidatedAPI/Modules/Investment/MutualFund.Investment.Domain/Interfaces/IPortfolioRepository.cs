@@ -10,6 +10,7 @@ namespace MutualFund.Investment.Domain.Interfaces
 
         // ── Read ──────────────────────────────────────────────────
         Task<PortfolioSnapshot?> GetLatestByHoldingAsync(int holdingId);
+        Task<Dictionary<int, PortfolioSnapshot>> GetLatestForHoldingsAsync(IEnumerable<int> holdingIds);
 
         Task<IEnumerable<PortfolioSnapshot>> GetByInvestorAsync(
             string investorUserId, DateTime? date = null);
