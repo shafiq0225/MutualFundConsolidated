@@ -381,8 +381,11 @@ app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "MutualFund Consolidated API v1");
-    c.RoutePrefix = string.Empty; // Swagger at root
+    c.RoutePrefix = "swagger";
 });
+
+app.MapGet("/", () => Results.Redirect("/swagger"));
+app.MapGet("/health", () => Results.Ok(new { status = "Healthy", timestamp = DateTime.UtcNow }));
 
 app.UseAuthentication();
 app.UseAuthorization();
