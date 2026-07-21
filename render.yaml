@@ -17,8 +17,9 @@ services:
   # ============================================================================
   # 2. Angular Frontend Shell (Static Site = 0 Compute Hours / Free Forever)
   # ============================================================================
-  - type: static_site
+  - type: web
     name: mutualfund-ui
+    env: static
     rootDir: MutualFundShell-Web
     buildCommand: npm install && npm run build -- --configuration=production
     staticPublishPath: ./dist/mutualfund-shell-web/browser

@@ -92,3 +92,6 @@ package-lock.json
 # ═══════════════════════════════════════════════
 *.beam
 erl_crash.dump
+
+# Python migration scripts
+*.py
