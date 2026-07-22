@@ -7,6 +7,7 @@ using MutualFundNav.Domain.Enums;
 using MutualFundNav.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using MutualFund.Investment.Application.Portfolio.Commands;
 
 namespace MutualFundNav.Application.UseCases.Commands
 {
@@ -37,19 +38,6 @@ namespace MutualFundNav.Application.UseCases.Commands
             _serviceProvider = serviceProvider;
         }
 
-        /// <param name="targetDate">The NAV date to download and store.</param>
-        /// <param name="kafkaTopic">Topic to publish to.</param>
-        /// <param name="triggerSource">
-        ///   Identifies what initiated this call — stored in <see cref="KafkaPublishLog.TriggerSource"/>.
-        ///   Examples: "NavDownloadWorker.Scheduled", "NavController.ManualTrigger".
-        /// </param>
-        /// <param name="ct">Cancellation token.</param>
-        /// <param name="allowReprocess">When true, manual triggers can re-publish existing data instead of skipping.</param>
-        /// <returns>
-        ///   Success(true)  — downloaded and stored, or existing data re-published.
-        ///   Success(false) — already existed, skipped.
-        ///   Failure(msg)   — download or storage error.
-        /// </returns>
         public async Task<Result<bool>> ExecuteAsync(
             DateTime targetDate,
             string kafkaTopic = "nav-file-processed",
@@ -85,6 +73,7 @@ namespace MutualFundNav.Application.UseCases.Commands
                     triggerSource);
 
                 await DirectSyncDetailedSchemesAsync(targetDate, existingNavFile.FileContent);
+                await AutoCalculatePortfolioSnapshotsAsync(targetDate);
 
                 return Result<bool>.Success(true);
             }
@@ -144,6 +133,7 @@ namespace MutualFundNav.Application.UseCases.Commands
                 triggerSource);
 
             await DirectSyncDetailedSchemesAsync(targetDate, content);
+            await AutoCalculatePortfolioSnapshotsAsync(targetDate);
 
             return Result<bool>.Success(true);
         }
@@ -316,6 +306,29 @@ namespace MutualFundNav.Application.UseCases.Commands
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to perform direct in-process scheme synchronization.");
+            }
+        }
+
+        private async Task AutoCalculatePortfolioSnapshotsAsync(DateTime targetDate)
+        {
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var snapshotCmd = scope.ServiceProvider.GetService<CalculateSnapshotCommand>();
+                if (snapshotCmd != null)
+                {
+                    _logger.LogInformation("Auto-triggering Portfolio Snapshot calculation for {Date}...", targetDate.ToString("yyyy-MM-dd"));
+                    await snapshotCmd.ExecuteAsync(targetDate);
+                    _logger.LogInformation("Portfolio Snapshot calculation completed automatically after NAV sync.");
+                }
+                else
+                {
+                    _logger.LogWarning("CalculateSnapshotCommand was not resolved in DI scope.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to auto-trigger portfolio snapshot calculation after NAV sync.");
             }
         }
     }

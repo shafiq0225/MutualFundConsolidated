@@ -129,9 +129,8 @@ namespace MutualFund.Auth.Infrastructure.Services
             if (!validPassword)
                 throw new InvalidCredentialsException();
 
-            // Update last login
+            // Update last login (tracked by EF, persisted in GenerateTokensAsync SaveChangesAsync)
             user.LastLoginAt = DateTime.UtcNow;
-            await _userManager.UpdateAsync(user);
 
             return await GenerateTokensAsync(user, ipAddress);
         }
@@ -202,18 +201,20 @@ namespace MutualFund.Auth.Infrastructure.Services
                 ApplicationUser user,
                 string? ipAddress = null)
         {
-            // Get active permissions for this user
-            var permissions = await _context.UserPermissions
-                .Where(up => up.UserId == user.Id
-                          && up.RevokedAt == null)
-                .Include(up => up.Permission)
-                .Select(up => up.Permission.Code)
-                .ToListAsync();
-
-            // Admin always gets all permissions
+            List<string> permissions;
             if (user.Role == UserRole.Admin)
-                permissions = Domain.Enums.PermissionType
-                    .GetAll().ToList();
+            {
+                // Admin gets all permissions without executing an extra DB query
+                permissions = Domain.Enums.PermissionType.GetAll().ToList();
+            }
+            else
+            {
+                permissions = await _context.UserPermissions
+                    .AsNoTracking()
+                    .Where(up => up.UserId == user.Id && up.RevokedAt == null)
+                    .Select(up => up.Permission.Code)
+                    .ToListAsync();
+            }
 
             var accessToken = _tokenService
                 .GenerateAccessToken(user, permissions);
