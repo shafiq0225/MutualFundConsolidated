@@ -53,24 +53,20 @@ namespace MutualFundNav.Application.UseCases.Commands
             // ── Idempotency check ──────────────────────────────────────────
             if (existingNavFile is not null)
             {
-                if (!allowReprocess)
-                {
-                    _logger.LogInformation("NAV data already exists for {Date} — skipping",
-                        targetDate.ToString("yyyy-MM-dd"));
-                    return Result<bool>.Success(false);
-                }
-
-                _logger.LogInformation("NAV data already exists for {Date} — re-publishing stored content",
+                _logger.LogInformation("NAV file already stored for {Date} — ensuring scheme sync & snapshot calculation...",
                     targetDate.ToString("yyyy-MM-dd"));
 
-                await PublishNavFileAsync(
-                    targetDate,
-                    existingNavFile.FileContent,
-                    existingNavFile.RecordCount,
-                    existingNavFile.Checksum,
-                    kafkaTopic,
-                    ct,
-                    triggerSource);
+                if (allowReprocess)
+                {
+                    await PublishNavFileAsync(
+                        targetDate,
+                        existingNavFile.FileContent,
+                        existingNavFile.RecordCount,
+                        existingNavFile.Checksum,
+                        kafkaTopic,
+                        ct,
+                        triggerSource);
+                }
 
                 await DirectSyncDetailedSchemesAsync(targetDate, existingNavFile.FileContent);
                 await AutoCalculatePortfolioSnapshotsAsync(targetDate);

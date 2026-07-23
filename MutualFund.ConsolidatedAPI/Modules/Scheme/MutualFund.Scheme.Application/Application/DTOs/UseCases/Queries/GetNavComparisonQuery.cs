@@ -20,14 +20,15 @@ namespace MutualFund.Scheme.Application.UseCases.Queries
         public async Task<NavComparisonResponseDto> ExecuteDailyAsync()
         {
             var tradingDates = await _unitOfWork.DetailedSchemes
-                .GetLastTradingDatesAsync(1);
+                .GetLastTradingDatesAsync(2);
 
             if (tradingDates.Count == 0)
                 throw new NavDataNotFoundException(DateTime.Today, DateTime.Today);
 
-            var latestDate = tradingDates[0].Date;
+            var endDate = tradingDates[0].Date;
+            var startDate = tradingDates.Count == 1 ? endDate : tradingDates[1].Date;
 
-            return await ExecuteAsync(latestDate, latestDate);
+            return await ExecuteAsync(startDate, endDate);
         }
 
         public async Task<NavComparisonResponseDto> ExecuteAsync(
