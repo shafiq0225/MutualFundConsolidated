@@ -25,6 +25,7 @@ namespace MutualFund.Auth.Infrastructure
                     {
                         b.MigrationsAssembly(
                             typeof(ApplicationDbContext).Assembly.FullName);
+                        b.MigrationsHistoryTable("__efmigrationshistory");
                         b.EnableRetryOnFailure(
                             maxRetryCount: 5,
                             maxRetryDelay: TimeSpan.FromSeconds(30),

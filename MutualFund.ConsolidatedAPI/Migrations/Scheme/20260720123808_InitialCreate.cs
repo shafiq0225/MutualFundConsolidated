@@ -32,7 +32,7 @@ namespace MutualFund.ConsolidatedAPI.Migrations.Scheme
                     IsApproved = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     Nav = table.Column<decimal>(type: "decimal(18,4)", nullable: false),
                     NavDate = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    ReceivedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false, defaultValueSql: "UTC_TIMESTAMP()")
+                    ReceivedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP(6)")
                 },
                 constraints: table =>
                 {
@@ -49,7 +49,7 @@ namespace MutualFund.ConsolidatedAPI.Migrations.Scheme
                     HolidayDate = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     Source = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    ReceivedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false, defaultValueSql: "UTC_TIMESTAMP()")
+                    ReceivedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP(6)")
                 },
                 constraints: table =>
                 {
@@ -70,7 +70,7 @@ namespace MutualFund.ConsolidatedAPI.Migrations.Scheme
                     FundName = table.Column<string>(type: "varchar(500)", maxLength: 500, nullable: false, defaultValue: "")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     IsApproved = table.Column<bool>(type: "tinyint(1)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false, defaultValueSql: "UTC_TIMESTAMP()"),
+                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP(6)"),
                     UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: true)
                 },
                 constraints: table =>

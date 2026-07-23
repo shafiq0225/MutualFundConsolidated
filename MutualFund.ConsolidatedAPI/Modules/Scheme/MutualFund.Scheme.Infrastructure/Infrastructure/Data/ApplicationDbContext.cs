@@ -26,7 +26,7 @@ namespace MutualFund.Scheme.Infrastructure.Data
                       .HasDefaultValue(string.Empty);
                 // ↑ Default lets the migration succeed against any existing
                 // enrollment rows — backfill real FundName values afterward.
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("UTC_TIMESTAMP()");
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
             });
 
             modelBuilder.Entity<DetailedScheme>(entity =>
@@ -39,7 +39,7 @@ namespace MutualFund.Scheme.Infrastructure.Data
                 entity.Property(e => e.SchemeCode).IsRequired().HasMaxLength(20);
                 entity.Property(e => e.SchemeName).IsRequired().HasMaxLength(500);
                 entity.Property(e => e.Nav).HasColumnType("decimal(18,4)");
-                entity.Property(e => e.ReceivedAt).HasDefaultValueSql("UTC_TIMESTAMP()");
+                entity.Property(e => e.ReceivedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
             });
 
             modelBuilder.Entity<MarketHoliday>(entity =>
@@ -48,7 +48,7 @@ namespace MutualFund.Scheme.Infrastructure.Data
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.HolidayDate).IsUnique();
                 entity.Property(e => e.Source).HasMaxLength(100);
-                entity.Property(e => e.ReceivedAt).HasDefaultValueSql("UTC_TIMESTAMP()");
+                entity.Property(e => e.ReceivedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
             });
 
             foreach (var entity in modelBuilder.Model.GetEntityTypes())

@@ -28,7 +28,7 @@ namespace MutualFundNav.Infrastructure.Data
                 e.Property(x => x.FileSizeBytes).IsRequired();
                 e.Property(x => x.RecordCount).IsRequired();
                 e.Property(x => x.DownloadedAt).IsRequired();
-                e.Property(x => x.CreatedAt).HasDefaultValueSql("UTC_TIMESTAMP()");
+                e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
             });
 
             // ── MarketHoliday ──────────────────────────────────────────────
@@ -39,7 +39,7 @@ namespace MutualFundNav.Infrastructure.Data
                 e.Property(x => x.HolidayDate).IsRequired();
                 e.Property(x => x.Description).HasMaxLength(256);
                 e.Property(x => x.Source).HasMaxLength(64);
-                e.Property(x => x.CreatedAt).HasDefaultValueSql("UTC_TIMESTAMP()");
+                e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
             });
 
             // ── JobExecutionLog ────────────────────────────────────────────
@@ -50,7 +50,7 @@ namespace MutualFundNav.Infrastructure.Data
                 e.Property(x => x.JobName).HasMaxLength(128).IsRequired();
                 e.Property(x => x.ErrorMessage).HasMaxLength(2048);
                 e.Property(x => x.Details).HasMaxLength(4096);
-                e.Property(x => x.CreatedAt).HasDefaultValueSql("UTC_TIMESTAMP()");
+                e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
             });
 
             // ── KafkaPublishLog ────────────────────────────────────────────
@@ -66,7 +66,7 @@ namespace MutualFundNav.Infrastructure.Data
                 e.Property(x => x.TriggerSource).HasMaxLength(128).IsRequired();
                 e.Property(x => x.ErrorMessage).HasMaxLength(2048);
                 e.Property(x => x.PublishedAt).IsRequired();
-                e.Property(x => x.CreatedAt).HasDefaultValueSql("UTC_TIMESTAMP()");
+                e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
             });
 
             foreach (var entity in modelBuilder.Model.GetEntityTypes())

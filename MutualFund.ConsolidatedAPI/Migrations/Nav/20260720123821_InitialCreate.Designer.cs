@@ -39,7 +39,7 @@ namespace MutualFund.ConsolidatedAPI.Migrations.Nav
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
                     b.Property<string>("Details")
                         .HasMaxLength(4096)
@@ -84,7 +84,7 @@ namespace MutualFund.ConsolidatedAPI.Migrations.Nav
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
                     b.Property<double>("ElapsedMs")
                         .HasColumnType("double");
@@ -156,7 +156,7 @@ namespace MutualFund.ConsolidatedAPI.Migrations.Nav
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -198,7 +198,7 @@ namespace MutualFund.ConsolidatedAPI.Migrations.Nav
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
                     b.Property<DateTime>("DownloadedAt")
                         .HasColumnType("datetime(6)");

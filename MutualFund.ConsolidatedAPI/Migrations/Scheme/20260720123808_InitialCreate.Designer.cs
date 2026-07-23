@@ -55,7 +55,7 @@ namespace MutualFund.ConsolidatedAPI.Migrations.Scheme
                     b.Property<DateTime>("ReceivedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
                     b.Property<string>("SchemeCode")
                         .IsRequired()
@@ -91,7 +91,7 @@ namespace MutualFund.ConsolidatedAPI.Migrations.Scheme
                     b.Property<DateTime>("ReceivedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
                     b.Property<string>("Source")
                         .IsRequired()
@@ -117,7 +117,7 @@ namespace MutualFund.ConsolidatedAPI.Migrations.Scheme
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
                     b.Property<string>("FundName")
                         .IsRequired()

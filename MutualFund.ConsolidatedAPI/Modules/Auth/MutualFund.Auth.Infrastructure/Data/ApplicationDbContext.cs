@@ -54,7 +54,7 @@ namespace MutualFund.Auth.Infrastructure.Data
                       .HasConversion<int>();
 
                 entity.Property(e => e.CreatedAt)
-                      .HasDefaultValueSql("UTC_TIMESTAMP()");
+                      .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
             });
 
             // ── RefreshToken ─────────────────────────────────────────
@@ -71,7 +71,7 @@ namespace MutualFund.Auth.Infrastructure.Data
                       .HasMaxLength(500);
 
                 entity.Property(e => e.CreatedAt)
-                      .HasDefaultValueSql("UTC_TIMESTAMP()");
+                      .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
                 entity.HasOne(e => e.User)
                       .WithMany(u => u.RefreshTokens)
@@ -100,7 +100,7 @@ namespace MutualFund.Auth.Infrastructure.Data
                       .HasMaxLength(500);
 
                 entity.Property(e => e.CreatedAt)
-                      .HasDefaultValueSql("UTC_TIMESTAMP()");
+                      .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
             });
 
             // ── UserPermission ───────────────────────────────────────
@@ -113,7 +113,7 @@ namespace MutualFund.Auth.Infrastructure.Data
                       .HasDatabaseName("IX_UserPermissions_UserId_PermissionId");
 
                 entity.Property(e => e.GrantedAt)
-                      .HasDefaultValueSql("UTC_TIMESTAMP()");
+                      .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
                 entity.HasOne(e => e.User)
                       .WithMany(u => u.UserPermissions)
@@ -136,7 +136,7 @@ namespace MutualFund.Auth.Infrastructure.Data
                       .HasMaxLength(200);
 
                 entity.Property(e => e.CreatedAt)
-                      .HasDefaultValueSql("UTC_TIMESTAMP()");
+                      .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
                 entity.HasOne(e => e.HeadUser)
                       .WithMany()
@@ -155,7 +155,7 @@ namespace MutualFund.Auth.Infrastructure.Data
                       .HasDatabaseName("IX_FamilyMembers_UserId");
 
                 entity.Property(e => e.AddedAt)
-                      .HasDefaultValueSql("UTC_TIMESTAMP()");
+                      .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
                 entity.Property(e => e.RelationshipType)
                       .HasConversion<int>();

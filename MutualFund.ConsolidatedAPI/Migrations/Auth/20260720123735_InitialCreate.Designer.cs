@@ -181,7 +181,7 @@ namespace MutualFund.ConsolidatedAPI.Migrations.Auth
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
                     b.Property<string>("Email")
                         .HasMaxLength(256)
@@ -280,7 +280,7 @@ namespace MutualFund.ConsolidatedAPI.Migrations.Auth
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
                     b.Property<string>("CreatedByAdminId")
                         .IsRequired()
@@ -316,7 +316,7 @@ namespace MutualFund.ConsolidatedAPI.Migrations.Auth
                     b.Property<DateTime>("AddedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
                     b.Property<string>("AddedByAdminId")
                         .IsRequired()
@@ -363,7 +363,7 @@ namespace MutualFund.ConsolidatedAPI.Migrations.Auth
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -453,7 +453,7 @@ namespace MutualFund.ConsolidatedAPI.Migrations.Auth
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
                     b.Property<string>("CreatedByIp")
                         .HasColumnType("longtext");
@@ -501,7 +501,7 @@ namespace MutualFund.ConsolidatedAPI.Migrations.Auth
                     b.Property<DateTime>("GrantedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)")
-                        .HasDefaultValueSql("UTC_TIMESTAMP()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
                     b.Property<string>("GrantedByUserId")
                         .IsRequired()

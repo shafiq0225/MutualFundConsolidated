@@ -31,7 +31,7 @@ namespace MutualFund.ConsolidatedAPI.Migrations.Nav
                     Details = table.Column<string>(type: "varchar(4096)", maxLength: 4096, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     ElapsedSeconds = table.Column<double>(type: "double", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false, defaultValueSql: "UTC_TIMESTAMP()"),
+                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP(6)"),
                     UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: true)
                 },
                 constraints: table =>
@@ -63,7 +63,7 @@ namespace MutualFund.ConsolidatedAPI.Migrations.Nav
                     NavDate = table.Column<DateTime>(type: "datetime(6)", nullable: true),
                     Partition = table.Column<int>(type: "int", nullable: true),
                     Offset = table.Column<long>(type: "bigint", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false, defaultValueSql: "UTC_TIMESTAMP()"),
+                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP(6)"),
                     UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: true)
                 },
                 constraints: table =>
@@ -83,7 +83,7 @@ namespace MutualFund.ConsolidatedAPI.Migrations.Nav
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Source = table.Column<string>(type: "varchar(64)", maxLength: 64, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false, defaultValueSql: "UTC_TIMESTAMP()"),
+                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP(6)"),
                     UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: true)
                 },
                 constraints: table =>
@@ -107,7 +107,7 @@ namespace MutualFund.ConsolidatedAPI.Migrations.Nav
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     DownloadedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     IsHoliday = table.Column<bool>(type: "tinyint(1)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false, defaultValueSql: "UTC_TIMESTAMP()"),
+                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP(6)"),
                     UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: true)
                 },
                 constraints: table =>

@@ -25,6 +25,7 @@ namespace MutualFund.Investment.Infrastructure
                     {
                         sql.MigrationsAssembly(
                             typeof(InvestmentDbContext).Assembly.FullName);
+                        sql.MigrationsHistoryTable("__efmigrationshistory");
 
                         // ← Required for MySQL transient fault handling
                         sql.EnableRetryOnFailure(
