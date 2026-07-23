@@ -1,4 +1,4 @@
-﻿using MutualFund.Investment.Application.Portfolio.Dtos;
+using MutualFund.Investment.Application.Portfolio.Dtos;
 using MutualFund.Investment.Domain.Common;
 using MutualFund.Investment.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -69,11 +69,19 @@ namespace MutualFund.Investment.Application.Portfolio.Queries
                     ? Math.Round((totalPL / totalInvested) * 100, 4)
                     : 0;
 
+                var maxSnapshotDate = rows
+                    .Where(r => r.SnapshotDate.HasValue)
+                    .Select(r => r.SnapshotDate!.Value)
+                    .DefaultIfEmpty()
+                    .Max();
+
+                var actualReportDate = asOfDate?.Date ?? (maxSnapshotDate != default ? maxSnapshotDate : DateTime.Today);
+
                 var report = new PortfolioReportDto
                 {
                     InvestorUserId = investorUserId,
                     InvestorName = investorName,
-                    ReportDate = reportDate,
+                    ReportDate = actualReportDate,
                     TotalInvested = totalInvested,
                     TotalCurrentValue = totalCurrentValue,
                     TotalProfitLoss = totalPL,

@@ -1,4 +1,4 @@
-﻿using MutualFund.Investment.Application.Portfolio.Dtos;
+using MutualFund.Investment.Application.Portfolio.Dtos;
 using MutualFund.Investment.Domain.Common;
 using MutualFund.Investment.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -80,9 +80,16 @@ namespace MutualFund.Investment.Application.Portfolio.Queries
                     ? Math.Round((familyPL / familyInvested) * 100, 4)
                     : 0;
 
+                var maxReportDate = investorReports
+                    .Select(r => r.ReportDate)
+                    .DefaultIfEmpty()
+                    .Max();
+
+                var actualReportDate = asOfDate?.Date ?? (maxReportDate != default ? maxReportDate : reportDate);
+
                 var familyPortfolio = new FamilyPortfolioDto
                 {
-                    ReportDate = reportDate,
+                    ReportDate = actualReportDate,
                     TotalFamilyInvested = familyInvested,
                     TotalFamilyCurrentValue = familyCurrentValue,
                     TotalFamilyProfitLoss = familyPL,
