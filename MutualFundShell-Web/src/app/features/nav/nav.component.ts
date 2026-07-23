@@ -95,8 +95,8 @@ export class NavComponent implements OnInit {
       this.toastr.warning('Please select both dates.');
       return;
     }
-    if (new Date(start) >= new Date(end)) {
-      this.toastr.warning('Start date must be before end date.');
+    if (new Date(start) > new Date(end)) {
+      this.toastr.warning('Start date cannot be after end date.');
       return;
     }
 

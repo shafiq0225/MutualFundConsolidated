@@ -302,6 +302,11 @@ namespace MutualFundNav.Application.UseCases.Commands
                 {
                     _logger.LogInformation("No new detailed schemes to insert.");
                 }
+
+                // Always invalidate navcomparison_daily cache after sync
+                var memoryCache = _serviceProvider.GetService<Microsoft.Extensions.Caching.Memory.IMemoryCache>();
+                memoryCache?.Remove("navcomparison_daily");
+                _logger.LogInformation("Invalidated 'navcomparison_daily' cache after NAV sync.");
             }
             catch (Exception ex)
             {

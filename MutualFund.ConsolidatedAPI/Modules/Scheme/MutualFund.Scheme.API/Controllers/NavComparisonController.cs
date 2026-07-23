@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using MutualFund.Scheme.Application.UseCases.Queries;
@@ -32,10 +32,10 @@ namespace MutualFund.Scheme.API.Controllers
         public async Task<IActionResult> GetComparison(
             [FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
         {
-            if (startDate >= endDate)
+            if (startDate > endDate)
                 throw new ValidationException(new Dictionary<string, string[]>
                 {
-                    { "dateRange", new[] { "startDate must be earlier than endDate." } }
+                    { "dateRange", new[] { "startDate cannot be later than endDate." } }
                 });
 
             var result = await _query.ExecuteAsync(startDate.Date, endDate.Date);

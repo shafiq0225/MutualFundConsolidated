@@ -1,4 +1,4 @@
-﻿using MutualFund.Scheme.Application.DTOs;
+using MutualFund.Scheme.Application.DTOs;
 using MutualFund.Scheme.Domain.Exceptions;
 using MutualFund.Scheme.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -20,15 +20,14 @@ namespace MutualFund.Scheme.Application.UseCases.Queries
         public async Task<NavComparisonResponseDto> ExecuteDailyAsync()
         {
             var tradingDates = await _unitOfWork.DetailedSchemes
-                .GetLastTradingDatesAsync(2);
+                .GetLastTradingDatesAsync(1);
 
             if (tradingDates.Count == 0)
                 throw new NavDataNotFoundException(DateTime.Today, DateTime.Today);
 
-            var endDate = tradingDates[0].Date;
-            var startDate = tradingDates.Count == 1 ? endDate : tradingDates[1].Date;
+            var latestDate = tradingDates[0].Date;
 
-            return await ExecuteAsync(startDate, endDate);
+            return await ExecuteAsync(latestDate, latestDate);
         }
 
         public async Task<NavComparisonResponseDto> ExecuteAsync(
