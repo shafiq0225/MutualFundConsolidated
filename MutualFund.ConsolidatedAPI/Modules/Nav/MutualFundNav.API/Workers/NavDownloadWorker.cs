@@ -71,57 +71,31 @@ namespace MutualFundNav.API.Workers
         {
             try
             {
-                var tz = GetIstTimeZone();
-                var nowIst = TimeZoneInfo.ConvertTime(DateTime.UtcNow, tz);
-                var scheduleTime = TimeSpan.Parse(_config["AppSettings:ScheduleTime"] ?? "08:30:00");
-                var scheduledToday = nowIst.Date.Add(scheduleTime);
-
-                // If scheduled time hasn't passed yet — nothing missed
-                if (nowIst < scheduledToday)
-                {
-                    _logger.LogInformation(
-                        "Startup check: scheduled time {Time} not yet reached — no missed run",
-                        scheduledToday.ToString("HH:mm"));
-                    return;
-                }
-
                 using var scope = _scopeFactory.CreateScope();
                 var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
                 var dateHelper = scope.ServiceProvider.GetRequiredService<IDateHelper>();
+                var schemeUow = scope.ServiceProvider.GetRequiredService<MutualFund.Scheme.Domain.Interfaces.IUnitOfWork>();
 
-                // Check if a job already ran successfully today
-                var latestJob = await uow.JobLogs.GetLatestAsync();
-                bool jobRanToday = latestJob is not null
-                    && TimeZoneInfo.ConvertTime(DateTime.SpecifyKind(latestJob.StartedAt, DateTimeKind.Utc), tz).Date == nowIst.Date
-                    && latestJob.IsSuccess;
-
-                if (jobRanToday)
-                {
-                    _logger.LogInformation(
-                        "Startup check: job already ran today at {Time} — no missed run",
-                        latestJob!.StartedAt.ToString("HH:mm:ss"));
-                    return;
-                }
-
-                // Check if NAV data exists for the target date
                 var targetDate = await dateHelper.GetTargetNavDateAsync();
-                bool dataExists = await uow.NavFiles.ExistsByDateAsync(targetDate);
 
-                if (dataExists)
+                // Check if DetailedSchemes has data for targetDate
+                var latestTradingDates = await schemeUow.DetailedSchemes.GetLastTradingDatesAsync(1);
+                var latestInDb = latestTradingDates.FirstOrDefault();
+                bool hasTargetDateData = latestTradingDates.Count > 0 && latestInDb.Date >= targetDate.Date;
+
+                if (!hasTargetDateData)
                 {
-                    _logger.LogInformation(
-                        "Startup check: NAV data for {Date} already exists — no action needed",
-                        targetDate.ToString("yyyy-MM-dd"));
+                    _logger.LogWarning(
+                        "Startup check: DB NAV date ({Latest:yyyy-MM-dd}) is behind target date ({Target:yyyy-MM-dd}). Triggering automatic NAV download & sync...",
+                        latestInDb, targetDate);
+
+                    await RunJobAsync("NavDownloadWorker.StartupSync", ct);
                     return;
                 }
 
-                // Missed run confirmed — execute now
-                _logger.LogWarning(
-                    "Startup check: MISSED RUN detected! Scheduled at {Scheduled}, " +
-                    "target date {Date} has no data. Running now...",
-                    scheduledToday.ToString("HH:mm"), targetDate.ToString("yyyy-MM-dd"));
-
-                await RunJobAsync("NavDownloadWorker.MissedRun", ct);
+                _logger.LogInformation(
+                    "Startup check: DB is up to date with NAV for {Date}.",
+                    targetDate.ToString("yyyy-MM-dd"));
             }
             catch (Exception ex)
             {

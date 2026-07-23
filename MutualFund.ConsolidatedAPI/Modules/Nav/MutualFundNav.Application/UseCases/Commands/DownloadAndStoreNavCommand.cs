@@ -260,7 +260,17 @@ namespace MutualFundNav.Application.UseCases.Commands
                     var schemeCode = parts[0].Trim();
                     if (!approvedCodes.Contains(schemeCode)) continue;
 
-                    if (await schemeUow.DetailedSchemes.ExistsBySchemeCodeAndDateAsync(schemeCode, targetDate))
+                    DateTime recordNavDate = targetDate.Date;
+                    if (parts.Length >= 6 && DateTime.TryParseExact(parts[5].Trim(),
+                            new[] { "dd-MMM-yyyy", "dd-MM-yyyy", "yyyy-MM-dd" },
+                            System.Globalization.CultureInfo.InvariantCulture,
+                            System.Globalization.DateTimeStyles.None,
+                            out var parsedDate))
+                    {
+                        recordNavDate = parsedDate.Date;
+                    }
+
+                    if (await schemeUow.DetailedSchemes.ExistsBySchemeCodeAndDateAsync(schemeCode, recordNavDate))
                     {
                         continue;
                     }
@@ -283,7 +293,7 @@ namespace MutualFundNav.Application.UseCases.Commands
                         SchemeName = parts[3].Trim(),
                         IsApproved = enrollment.IsApproved,
                         Nav = nav,
-                        NavDate = targetDate.Date,
+                        NavDate = recordNavDate,
                         ReceivedAt = receivedAt
                     });
                 }
