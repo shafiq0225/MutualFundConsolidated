@@ -89,11 +89,9 @@ namespace MutualFundNav.Application.UseCases.Commands
 
             var checksum = ComputeChecksum(content);
 
-            // ── Store (transactional) ──────────────────────────────────────
+            // ── Store ──────────────────────────────────────────────────────
             try
             {
-                await _unitOfWork.BeginTransactionAsync();
-
                 var navFile = new NavFile
                 {
                     NavDate = targetDate,
@@ -106,7 +104,6 @@ namespace MutualFundNav.Application.UseCases.Commands
 
                 await _unitOfWork.NavFiles.AddAsync(navFile);
                 await _unitOfWork.CompleteAsync();
-                await _unitOfWork.CommitTransactionAsync();  // disposes + nulls _transaction
 
                 _logger.LogInformation(
                     "Stored NAV file for {Date} — {Size} bytes, {Records} records",
@@ -114,7 +111,6 @@ namespace MutualFundNav.Application.UseCases.Commands
             }
             catch (Exception ex)
             {
-                await _unitOfWork.RollbackTransactionAsync();
                 _logger.LogError(ex, "Storage failed for {Date}", targetDate.ToString("yyyy-MM-dd"));
                 return Result<bool>.Failure($"Storage failed: {ex.Message}");
             }

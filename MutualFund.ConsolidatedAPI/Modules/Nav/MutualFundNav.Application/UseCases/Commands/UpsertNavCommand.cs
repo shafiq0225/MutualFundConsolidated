@@ -1,4 +1,4 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using System.Text;
 using MutualFundNav.Domain.Common;
 using MutualFundNav.Domain.Contracts;
@@ -60,11 +60,9 @@ namespace MutualFundNav.Application.UseCases.Commands
             var checksum = ComputeChecksum(content);
             bool wasReplaced = false;
 
-            // ── Upsert (transactional) ────────────────────────────────────
+            // ── Upsert ───────────────────────────────────────────────────
             try
             {
-                await _unitOfWork.BeginTransactionAsync();
-
                 var existing = await _unitOfWork.NavFiles.GetByDateAsync(targetDate);
 
                 if (existing is not null)
@@ -95,11 +93,9 @@ namespace MutualFundNav.Application.UseCases.Commands
                 }
 
                 await _unitOfWork.CompleteAsync();
-                await _unitOfWork.CommitTransactionAsync(); // disposes + nulls _transaction
             }
             catch (Exception ex)
             {
-                await _unitOfWork.RollbackTransactionAsync();
                 _logger.LogError(ex, "Upsert failed for {Date}", targetDate.ToString("yyyy-MM-dd"));
                 return Result<UpsertNavResult>.Failure($"Storage failed: {ex.Message}");
             }
