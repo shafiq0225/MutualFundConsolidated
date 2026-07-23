@@ -27,6 +27,8 @@ WORKDIR /app
 # Set production environment and default port (Render uses $PORT or 8080)
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV ASPNETCORE_URLS=http://+:8080
+# Disable file watchers to avoid inotify limit crash on Render free tier
+ENV DOTNET_hostBuilder__reloadConfigOnChange=false
 EXPOSE 8080
 
 # Copy published binaries from build stage
