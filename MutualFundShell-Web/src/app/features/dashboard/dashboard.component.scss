@@ -115,8 +115,20 @@
 // ===== WEEKLY PROGRESSIVE DAILY LEDGER SECTION =====
 .progressive-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 12px;
+  width: 100%;
+}
+@media (max-width: 1024px) {
+  .progressive-grid {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    .progressive-card {
+      min-width: 150px;
+      flex-shrink: 0;
+    }
+  }
 }
 .progressive-card {
   background: #F8FAFC;

@@ -523,12 +523,12 @@ namespace MutualFund.Investment.Application.Family.Queries
             int nRecords;
             switch (latestNavDate.DayOfWeek)
             {
-                case DayOfWeek.Monday: nRecords = 2; break;
-                case DayOfWeek.Tuesday: nRecords = 3; break;
-                case DayOfWeek.Wednesday: nRecords = 4; break;
-                case DayOfWeek.Thursday: nRecords = 5; break;
-                case DayOfWeek.Friday: nRecords = 6; break;
-                default: nRecords = 6; break;
+                case DayOfWeek.Monday: nRecords = 1; break;
+                case DayOfWeek.Tuesday: nRecords = 2; break;
+                case DayOfWeek.Wednesday: nRecords = 3; break;
+                case DayOfWeek.Thursday: nRecords = 4; break;
+                case DayOfWeek.Friday: nRecords = 5; break;
+                default: nRecords = 5; break;
             }
 
             for (int k = 0; k < nRecords; k++)
@@ -593,12 +593,12 @@ namespace MutualFund.Investment.Application.Family.Queries
             int nRecords;
             switch (latestNavDate.DayOfWeek)
             {
-                case DayOfWeek.Monday: nRecords = 2; break;
-                case DayOfWeek.Tuesday: nRecords = 3; break;
-                case DayOfWeek.Wednesday: nRecords = 4; break;
-                case DayOfWeek.Thursday: nRecords = 5; break;
-                case DayOfWeek.Friday: nRecords = 6; break;
-                default: nRecords = 6; break;
+                case DayOfWeek.Monday: nRecords = 1; break;
+                case DayOfWeek.Tuesday: nRecords = 2; break;
+                case DayOfWeek.Wednesday: nRecords = 3; break;
+                case DayOfWeek.Thursday: nRecords = 4; break;
+                case DayOfWeek.Friday: nRecords = 5; break;
+                default: nRecords = 5; break;
             }
 
             for (int k = 0; k < nRecords; k++)
