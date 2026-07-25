@@ -1,4 +1,4 @@
-﻿namespace MutualFund.Investment.Application.Family.Dtos
+namespace MutualFund.Investment.Application.Family.Dtos
 {
     // ── Screen 1 ───────────────────────────────────────────────────
 
@@ -18,6 +18,7 @@
         public int HybridSchemeCount { get; set; }
 
         public QuickReturnDto? FamilyYesterdayReturn { get; set; }
+        public List<QuickReturnDto> ProgressiveDailyReturns { get; set; } = new();
 
         public DateTime ReportDate { get; set; }
 
@@ -49,6 +50,7 @@
         public QuickReturnDto? OneYear { get; set; }   // 1Y
         public QuickReturnDto? ThreeYear { get; set; }   // 3Y
         public QuickReturnDto? FiveYear { get; set; }   // 5Y ← NEW
+        public List<QuickReturnDto> ProgressiveDailyReturns { get; set; } = new();
     }
 
     // ── Screen 2 ───────────────────────────────────────────────────
@@ -95,6 +97,7 @@
         public QuickReturnDto? OneYear { get; set; }
         public QuickReturnDto? ThreeYear { get; set; }   // ← NEW
         public QuickReturnDto? FiveYear { get; set; }   // ← NEW
+        public List<QuickReturnDto> ProgressiveDailyReturns { get; set; } = new();
     }
 
     // ── Shared return DTO ──────────────────────────────────────────
@@ -156,6 +159,7 @@
         public PeriodDetailDto? OneYear { get; set; }
         public PeriodDetailDto? ThreeYear { get; set; }
         public PeriodDetailDto? FiveYear { get; set; }   // ← NEW
+        public List<QuickReturnDto> ProgressiveDailyReturns { get; set; } = new();
     }
 
     public class PeriodDetailDto

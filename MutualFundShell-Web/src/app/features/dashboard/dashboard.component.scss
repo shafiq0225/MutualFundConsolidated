@@ -112,6 +112,53 @@
   &:hover { background: rgba(192, 138, 46, 0.1); }
 }
 
+// ===== WEEKLY PROGRESSIVE DAILY LEDGER SECTION =====
+.progressive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+.progressive-card {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+}
+.progressive-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.progressive-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink, #1B2A4A);
+}
+.progressive-subdate {
+  font-size: 10.5px;
+  color: #64748B;
+  font-weight: 400;
+}
+.progressive-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  &.positive { background: #E6F4EA; color: #137333; }
+  &.negative { background: #FCE8E6; color: #C5221F; }
+}
+.progressive-pnl {
+  font-size: 17px;
+  font-weight: 700;
+  font-family: 'IBM Plex Mono', monospace;
+  &.positive { color: #137333; }
+  &.negative { color: #C5221F; }
+}
+
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
 
 .stat-card {

@@ -26,6 +26,7 @@ export interface MemberSummaryDto {
   oneYear?: QuickReturnDto | null;
   threeYear?: QuickReturnDto | null;
   fiveYear?: QuickReturnDto | null;
+  progressiveDailyReturns?: QuickReturnDto[];
 }
 
 export interface FamilyOverviewDto {
@@ -40,6 +41,7 @@ export interface FamilyOverviewDto {
   debtSchemeCount: number;
   hybridSchemeCount: number;
   familyYesterdayReturn?: QuickReturnDto | null;
+  progressiveDailyReturns?: QuickReturnDto[];
   reportDate: Date;
   members: MemberSummaryDto[];
 }
@@ -67,6 +69,7 @@ export interface HoldingCardDto {
   oneYear?: QuickReturnDto | null;
   threeYear?: QuickReturnDto | null;
   fiveYear?: QuickReturnDto | null;
+  progressiveDailyReturns?: QuickReturnDto[];
 }
 
 export interface MemberHoldingsDto {

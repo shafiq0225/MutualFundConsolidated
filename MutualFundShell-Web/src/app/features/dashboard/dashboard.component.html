@@ -103,6 +103,33 @@
       </div>
     </section>
 
+    <!-- WEEKLY PROGRESSIVE DAILY LEDGER SECTION -->
+    <section class="dashboard-section progressive-section" *ngIf="progressiveDailyReturns.length > 0">
+      <div class="section-header">
+        <div>
+          <h2>Weekly Progressive Daily Ledger</h2>
+          <p class="section-desc">Step-by-step trading day performance for the current week ({{ progressiveDailyReturns.length }} active records)</p>
+        </div>
+        <button class="btn-view-all" (click)="navigateToPortfolio()">View Full Portfolio Passbook →</button>
+      </div>
+
+      <div class="progressive-grid">
+        <div class="progressive-card" *ngFor="let rec of progressiveDailyReturns">
+          <div class="progressive-header">
+            <span class="progressive-label">{{ rec.label }} <span class="progressive-subdate">(vs {{ rec.actualFromDate }})</span></span>
+            <span class="progressive-badge" [class.positive]="rec.isPositive" [class.negative]="!rec.isPositive">
+              {{ rec.returnPercent >= 0 ? '+' : '' }}{{ rec.returnPercent | number:'1.2-2' }}%
+            </span>
+          </div>
+          <div class="progressive-body">
+            <div class="progressive-pnl" [class.positive]="rec.isPositive" [class.negative]="!rec.isPositive">
+              {{ rec.periodGainAmount >= 0 ? '+' : '' }}₹{{ rec.periodGainAmount | number:'1.0-0' }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ASSET CATEGORY PERFORMANCE METRICS (Equity, Debt, Gold) -->
     <section class="dashboard-section allocation-section">
       <div class="section-header">

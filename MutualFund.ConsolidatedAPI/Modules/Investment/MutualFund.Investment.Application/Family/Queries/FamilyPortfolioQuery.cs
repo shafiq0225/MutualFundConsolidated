@@ -84,13 +84,14 @@ namespace MutualFund.Investment.Application.Family.Queries
                         HoldingCount = group.Count(),
                         CategorySummary = GetCategorySummary(mh),
 
-                        DayBefore = CalcMemberPeriodReturn("D-2", 2, 0m, mh, snapshotMap, navHistoryMap),
-                        Yesterday = CalcMemberPeriodReturn("Yest", 2, 0m, mh, snapshotMap, navHistoryMap),
+                        DayBefore = CalcMemberPreviousTwoNavsReturn("D-2", mh, navHistoryMap),
+                        Yesterday = CalcMemberLastTwoNavsReturn("Yest", mh, navHistoryMap),
                         ThisWeek = CalcMemberPeriodReturn("1W", 7, 0m, mh, snapshotMap, navHistoryMap),
                         OneMonth = CalcMemberPeriodReturn("1M", 30, 0m, mh, snapshotMap, navHistoryMap),
                         OneYear = CalcMemberPeriodReturn("1Y", 365, 1m, mh, snapshotMap, navHistoryMap),
                         ThreeYear = CalcMemberPeriodReturn("3Y", 1095, 3m, mh, snapshotMap, navHistoryMap),
                         FiveYear = CalcMemberPeriodReturn("5Y", 1825, 5m, mh, snapshotMap, navHistoryMap),
+                        ProgressiveDailyReturns = CalcProgressiveDailyReturnsForHoldings(mh, navHistoryMap)
                     });
                 }
 
@@ -100,8 +101,8 @@ namespace MutualFund.Investment.Application.Family.Queries
                 var totalGainPct = totalInvested > 0
                     ? Math.Round((totalGain / totalInvested) * 100, 4) : 0;
 
-                var familyYesterday = CalcMemberPeriodReturn(
-                    "Yest", 2, 0m, holdingList, snapshotMap, navHistoryMap);
+                var familyYesterday = CalcMemberLastTwoNavsReturn(
+                    "Yest", holdingList, navHistoryMap);
                 var (eq, dbt, hyb) = GetSchemeCategoryCounts(holdingList);
 
                 return Result<FamilyOverviewDto>.Success(new FamilyOverviewDto
@@ -118,6 +119,7 @@ namespace MutualFund.Investment.Application.Family.Queries
                     DebtSchemeCount = dbt,
                     HybridSchemeCount = hyb,
                     FamilyYesterdayReturn = familyYesterday,
+                    ProgressiveDailyReturns = CalcProgressiveDailyReturnsForHoldings(holdingList, navHistoryMap),
                     ReportDate = DateTime.Today,
                     Members = members.OrderBy(m => m.InvestorName)
                 });
@@ -178,14 +180,15 @@ namespace MutualFund.Investment.Application.Family.Queries
                         GainPercent = gainPct,
                         IsGain = gain >= 0,
 
-                        DayBefore = CalcQuickReturn("D-2", 2, 0m, navHistory, currentNAV, h.Units),
-                        Yesterday = CalcQuickReturn("Yest", 2, 0m, navHistory, currentNAV, h.Units),
+                        DayBefore = CalcQuickReturnPreviousTwoNavs("D-2", navHistory, h.Units),
+                        Yesterday = CalcQuickReturnLastTwoNavs("Yest", navHistory, h.Units),
                         ThisWeek = CalcQuickReturn("1W", 7, 0m, navHistory, currentNAV, h.Units),
                         OneMonth = CalcQuickReturn("1M", 30, 0m, navHistory, currentNAV, h.Units),
                         SixMonth = CalcQuickReturn("6M", 180, 0m, navHistory, currentNAV, h.Units),
                         OneYear = CalcQuickReturn("1Y", 365, 1m, navHistory, currentNAV, h.Units),
                         ThreeYear = CalcQuickReturn("3Y", 1095, 3m, navHistory, currentNAV, h.Units),
                         FiveYear = CalcQuickReturn("5Y", 1825, 5m, navHistory, currentNAV, h.Units),
+                        ProgressiveDailyReturns = CalcProgressiveDailyReturnsForScheme(navHistory, h.Units)
                     });
                 }
 
@@ -306,6 +309,7 @@ namespace MutualFund.Investment.Application.Family.Queries
                     OneYear = CalcPeriodDetail("1 Year", 365, 1m, navList, currentNAV, holding.Units),
                     ThreeYear = CalcPeriodDetail("3 Year", 1095, 3m, navList, currentNAV, holding.Units),
                     FiveYear = CalcPeriodDetail("5 Year", 1825, 5m, navList, currentNAV, holding.Units),
+                    ProgressiveDailyReturns = CalcProgressiveDailyReturnsForScheme(navList, holding.Units)
                 });
             }
             catch (Exception ex)
@@ -320,6 +324,317 @@ namespace MutualFund.Investment.Application.Family.Queries
         // ══════════════════════════════════════════════════════════
         // PRIVATE HELPERS
         // ══════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Calculates return % and P&L between the last two available NAV dates
+        /// (e.g. Wednesday vs Tuesday, or Friday vs Thursday on weekends/Mondays).
+        /// </summary>
+        private QuickReturnDto CalcMemberLastTwoNavsReturn(
+            string label,
+            List<Domain.Entities.Holding> holdings,
+            Dictionary<string, List<NavRecord>> navHistoryMap)
+        {
+            decimal totalLatestVal = 0;
+            decimal totalPreviousVal = 0;
+            int covered = 0;
+            DateTime previousNavDate = DateTime.MinValue;
+
+            foreach (var h in holdings)
+            {
+                if (!navHistoryMap.TryGetValue(h.SchemeCode, out var navList)
+                    || navList == null || !navList.Any())
+                    continue;
+
+                var nav1 = navList[0].NAV;
+                var nav2 = navList.Count >= 2 ? navList[1].NAV : navList[0].NAV;
+
+                if (navList.Count >= 2 && navList[1].NavDate > previousNavDate)
+                {
+                    previousNavDate = navList[1].NavDate;
+                }
+                else if (previousNavDate == DateTime.MinValue && navList[0].NavDate != DateTime.MinValue)
+                {
+                    previousNavDate = navList[0].NavDate;
+                }
+
+                totalLatestVal += h.Units * nav1;
+                totalPreviousVal += h.Units * nav2;
+                covered++;
+            }
+
+            if (covered == 0 || totalPreviousVal <= 0)
+                return new QuickReturnDto { Label = label, HasData = false };
+
+            var gain = totalLatestVal - totalPreviousVal;
+            var pct = Math.Round((gain / totalPreviousVal) * 100, 4);
+
+            return new QuickReturnDto
+            {
+                Label = label,
+                ReturnPercent = pct,
+                PeriodGainAmount = Math.Round(gain, 2),
+                CagrPercent = 0,
+                IsPositive = gain >= 0,
+                HasData = true,
+                IsPartialPeriod = false,
+                ActualFromDate = previousNavDate != DateTime.MinValue ? previousNavDate.ToString("dd MMM yyyy") : string.Empty
+            };
+        }
+
+        /// <summary>
+        /// Calculates return % and P&L between the 2nd and 3rd available NAV dates (Day Before Yesterday).
+        /// </summary>
+        private QuickReturnDto CalcMemberPreviousTwoNavsReturn(
+            string label,
+            List<Domain.Entities.Holding> holdings,
+            Dictionary<string, List<NavRecord>> navHistoryMap)
+        {
+            decimal totalVal2 = 0;
+            decimal totalVal3 = 0;
+            int covered = 0;
+            DateTime date3 = DateTime.MinValue;
+
+            foreach (var h in holdings)
+            {
+                if (!navHistoryMap.TryGetValue(h.SchemeCode, out var navList)
+                    || navList == null || !navList.Any())
+                    continue;
+
+                var nav2 = navList.Count >= 2 ? navList[1].NAV : navList[0].NAV;
+                var nav3 = navList.Count >= 3 ? navList[2].NAV : (navList.Count >= 2 ? navList[1].NAV : navList[0].NAV);
+
+                if (navList.Count >= 3 && navList[2].NavDate > date3)
+                {
+                    date3 = navList[2].NavDate;
+                }
+
+                totalVal2 += h.Units * nav2;
+                totalVal3 += h.Units * nav3;
+                covered++;
+            }
+
+            if (covered == 0 || totalVal3 <= 0)
+                return new QuickReturnDto { Label = label, HasData = false };
+
+            var gain = totalVal2 - totalVal3;
+            var pct = Math.Round((gain / totalVal3) * 100, 4);
+
+            return new QuickReturnDto
+            {
+                Label = label,
+                ReturnPercent = pct,
+                PeriodGainAmount = Math.Round(gain, 2),
+                CagrPercent = 0,
+                IsPositive = gain >= 0,
+                HasData = true,
+                IsPartialPeriod = false,
+                ActualFromDate = date3 != DateTime.MinValue ? date3.ToString("dd MMM yyyy") : string.Empty
+            };
+        }
+
+        /// <summary>
+        /// Calculates return % and P&L between the last two available NAV dates for a single scheme holding.
+        /// </summary>
+        private QuickReturnDto CalcQuickReturnLastTwoNavs(
+            string label,
+            List<NavRecord>? navList,
+            decimal units)
+        {
+            if (navList == null || !navList.Any() || units <= 0)
+                return new QuickReturnDto { Label = label, HasData = false };
+
+            var nav1 = navList[0].NAV;
+            var nav2 = navList.Count >= 2 ? navList[1].NAV : navList[0].NAV;
+
+            var latestVal = units * nav1;
+            var previousVal = units * nav2;
+            var gain = latestVal - previousVal;
+            var pct = previousVal > 0
+                ? Math.Round((gain / previousVal) * 100, 4) : 0;
+
+            return new QuickReturnDto
+            {
+                Label = label,
+                ReturnPercent = pct,
+                PeriodGainAmount = Math.Round(gain, 2),
+                CagrPercent = 0,
+                IsPositive = gain >= 0,
+                HasData = true,
+                IsPartialPeriod = false,
+                ActualFromDate = navList.Count >= 2 ? navList[1].NavDate.ToString("dd MMM yyyy") : navList[0].NavDate.ToString("dd MMM yyyy")
+            };
+        }
+
+        /// <summary>
+        /// Calculates return % and P&L between the 2nd and 3rd available NAV dates for a single scheme holding.
+        /// </summary>
+        private QuickReturnDto CalcQuickReturnPreviousTwoNavs(
+            string label,
+            List<NavRecord>? navList,
+            decimal units)
+        {
+            if (navList == null || !navList.Any() || units <= 0)
+                return new QuickReturnDto { Label = label, HasData = false };
+
+            var nav2 = navList.Count >= 2 ? navList[1].NAV : navList[0].NAV;
+            var nav3 = navList.Count >= 3 ? navList[2].NAV : (navList.Count >= 2 ? navList[1].NAV : navList[0].NAV);
+
+            var val2 = units * nav2;
+            var val3 = units * nav3;
+            var gain = val2 - val3;
+            var pct = val3 > 0
+                ? Math.Round((gain / val3) * 100, 4) : 0;
+
+            return new QuickReturnDto
+            {
+                Label = label,
+                ReturnPercent = pct,
+                PeriodGainAmount = Math.Round(gain, 2),
+                CagrPercent = 0,
+                IsPositive = gain >= 0,
+                HasData = true,
+                IsPartialPeriod = false,
+                ActualFromDate = navList.Count >= 3 ? navList[2].NavDate.ToString("dd MMM yyyy") : string.Empty
+            };
+        }
+
+        /// <summary>
+        /// Calculates the progressive daily return records for a list of holdings based on the 
+        /// day of week of the latest available NAV data (1 to 6 records maximum).
+        /// </summary>
+        private List<QuickReturnDto> CalcProgressiveDailyReturnsForHoldings(
+            List<Domain.Entities.Holding> holdings,
+            Dictionary<string, List<NavRecord>> navHistoryMap)
+        {
+            var list = new List<QuickReturnDto>();
+            if (holdings == null || !holdings.Any()) return list;
+
+            DateTime latestNavDate = DateTime.MinValue;
+            foreach (var h in holdings)
+            {
+                if (navHistoryMap.TryGetValue(h.SchemeCode, out var navs) && navs != null && navs.Any())
+                {
+                    if (navs[0].NavDate > latestNavDate) latestNavDate = navs[0].NavDate;
+                }
+            }
+
+            if (latestNavDate == DateTime.MinValue) return list;
+
+            int nRecords;
+            switch (latestNavDate.DayOfWeek)
+            {
+                case DayOfWeek.Monday: nRecords = 2; break;
+                case DayOfWeek.Tuesday: nRecords = 3; break;
+                case DayOfWeek.Wednesday: nRecords = 4; break;
+                case DayOfWeek.Thursday: nRecords = 5; break;
+                case DayOfWeek.Friday: nRecords = 6; break;
+                default: nRecords = 6; break;
+            }
+
+            for (int k = 0; k < nRecords; k++)
+            {
+                decimal valNew = 0;
+                decimal valOld = 0;
+                int covered = 0;
+                DateTime newDate = DateTime.MinValue;
+                DateTime oldDate = DateTime.MinValue;
+
+                foreach (var h in holdings)
+                {
+                    if (!navHistoryMap.TryGetValue(h.SchemeCode, out var navs) || navs == null || navs.Count <= k)
+                        continue;
+
+                    var navNew = navs[k].NAV;
+                    var navOld = (k + 1 < navs.Count) ? navs[k + 1].NAV : navs[k].NAV;
+
+                    if (navs[k].NavDate > newDate) newDate = navs[k].NavDate;
+                    if (k + 1 < navs.Count && navs[k + 1].NavDate > oldDate) oldDate = navs[k + 1].NavDate;
+
+                    valNew += h.Units * navNew;
+                    valOld += h.Units * navOld;
+                    covered++;
+                }
+
+                if (covered == 0 || valOld <= 0) break;
+
+                var gain = valNew - valOld;
+                var pct = Math.Round((gain / valOld) * 100, 4);
+
+                string oldStr = oldDate != DateTime.MinValue ? oldDate.ToString("dd MMM") : string.Empty;
+                string newStr = newDate != DateTime.MinValue ? newDate.ToString("ddd, dd MMM") : string.Empty;
+
+                string label = newStr;
+
+                list.Add(new QuickReturnDto
+                {
+                    Label = label,
+                    ReturnPercent = pct,
+                    PeriodGainAmount = Math.Round(gain, 2),
+                    CagrPercent = 0,
+                    IsPositive = gain >= 0,
+                    HasData = true,
+                    IsPartialPeriod = false,
+                    ActualFromDate = oldStr
+                });
+            }
+
+            return list;
+        }
+
+        private List<QuickReturnDto> CalcProgressiveDailyReturnsForScheme(
+            List<NavRecord>? navs,
+            decimal units)
+        {
+            var list = new List<QuickReturnDto>();
+            if (navs == null || !navs.Any() || units <= 0) return list;
+
+            var latestNavDate = navs[0].NavDate;
+
+            int nRecords;
+            switch (latestNavDate.DayOfWeek)
+            {
+                case DayOfWeek.Monday: nRecords = 2; break;
+                case DayOfWeek.Tuesday: nRecords = 3; break;
+                case DayOfWeek.Wednesday: nRecords = 4; break;
+                case DayOfWeek.Thursday: nRecords = 5; break;
+                case DayOfWeek.Friday: nRecords = 6; break;
+                default: nRecords = 6; break;
+            }
+
+            for (int k = 0; k < nRecords; k++)
+            {
+                if (k >= navs.Count) break;
+
+                var navNew = navs[k].NAV;
+                var navOld = (k + 1 < navs.Count) ? navs[k + 1].NAV : navs[k].NAV;
+
+                var valNew = units * navNew;
+                var valOld = units * navOld;
+                if (valOld <= 0) break;
+
+                var gain = valNew - valOld;
+                var pct = Math.Round((gain / valOld) * 100, 4);
+
+                string oldStr = (k + 1 < navs.Count) ? navs[k + 1].NavDate.ToString("dd MMM") : navs[k].NavDate.ToString("dd MMM");
+                string newStr = navs[k].NavDate.ToString("ddd, dd MMM");
+
+                string label = newStr;
+
+                list.Add(new QuickReturnDto
+                {
+                    Label = label,
+                    ReturnPercent = pct,
+                    PeriodGainAmount = Math.Round(gain, 2),
+                    CagrPercent = 0,
+                    IsPositive = gain >= 0,
+                    HasData = true,
+                    IsPartialPeriod = false,
+                    ActualFromDate = oldStr
+                });
+            }
+
+            return list;
+        }
 
         /// <summary>
         /// Calculates period return across all holdings belonging to one member.

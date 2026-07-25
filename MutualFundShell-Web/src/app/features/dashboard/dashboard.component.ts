@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { interval, Subscription } from 'rxjs';
 import { DashboardService, DashboardData, DashboardStats, CategoryMetrics } from '../../core/services/dashboard.service';
+import { QuickReturnDto } from '../../core/models/family-portfolio.model';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -39,6 +40,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (this.refreshSubscription) {
       this.refreshSubscription.unsubscribe();
     }
+  }
+
+  get progressiveDailyReturns(): QuickReturnDto[] {
+    return this.dashboardData?.familyOverview?.progressiveDailyReturns ?? [];
   }
 
   loadDashboardData(): void {

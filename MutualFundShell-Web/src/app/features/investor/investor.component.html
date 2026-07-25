@@ -41,7 +41,7 @@
       <div>
         <div class="filter-label">Scheme</div>
         <div class="scheme-filter-wrap">
-          <select class="scheme-filter" [ngModel]="schemeFilter" (ngModelChange)="schemeFilter = $event">
+          <select class="scheme-filter" [ngModel]="schemeFilter" (ngModelChange)="onSchemeFilterChange($event)">
             <option value="all">All schemes</option>
             <option *ngFor="let scheme of uniqueSchemes" [value]="scheme">{{ scheme }}</option>
           </select>
@@ -105,12 +105,18 @@
       <div class="section-head">
         <h2 class="section-title">Investor Details</h2>
         <span class="section-sub">Primary holder &amp; family members on this portfolio</span>
+        <button class="reset-member-btn" *ngIf="selectedUserId !== 'family'" (click)="selectMember('family')">
+          ← View All Family Members
+        </button>
       </div>
       <div class="investor-card" *ngIf="currentMember as cm">
         <div class="id-row">
-          <div>Primary Holder <b>{{ cm.investorName }}</b></div>
+          <div>Holder <b>{{ cm.investorName }}</b></div>
           <div>PAN <b class="num">{{ panOf(cm.investorUserId) }}</b></div>
           <div>Folios Linked <b class="num">{{ foliosLinkedFor(cm.investorUserId) }}</b></div>
+          <div class="reset-action">
+            <button class="reset-chip" (click)="selectMember('family')">✕ Show All Family Members</button>
+          </div>
         </div>
       </div>
 
@@ -120,7 +126,30 @@
           <div><div class="cell-label">Invested</div><div class="cell-value num">₹{{ m.totalInvested | number:'1.0-0' }}</div></div>
           <div><div class="cell-label">Current</div><div class="cell-value num">₹{{ m.totalCurrentValue | number:'1.0-0' }}</div></div>
           <div><div class="cell-label">P&amp;L</div><div class="cell-value num" [style.color]="m.totalGain >= 0 ? 'var(--gain)' : 'var(--loss)'">{{ m.totalGain >= 0 ? '+' : '' }}₹{{ m.totalGain | number:'1.0-0' }}</div></div>
-          <div><div class="cell-label">Change</div><div class="cell-value num" [style.color]="m.totalGain >= 0 ? 'var(--gain)' : 'var(--loss)'">{{ m.totalGainPercent >= 0 ? '+' : '' }}{{ m.totalGainPercent | number:'1.2-2' }}%</div></div>
+          <div><div class="cell-label">Overall %</div><div class="cell-value num" [style.color]="m.totalGain >= 0 ? 'var(--gain)' : 'var(--loss)'">{{ m.totalGainPercent >= 0 ? '+' : '' }}{{ m.totalGainPercent | number:'1.2-2' }}%</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== WEEKLY PROGRESSIVE DAILY COMPARISON LEDGER ===================== -->
+    <div class="section" *ngIf="progressiveDailyReturns.length > 0">
+      <div class="section-head">
+        <h2 class="section-title">Weekly Progressive Daily Ledger</h2>
+        <span class="section-sub">Step-by-step trading day performance for current week ({{ progressiveDailyReturns.length }} active records)</span>
+      </div>
+      <div class="progressive-grid">
+        <div class="progressive-card" *ngFor="let rec of progressiveDailyReturns">
+          <div class="progressive-header">
+            <span class="progressive-label">{{ rec.label }} <span style="font-size:10.5px; color:var(--text-muted); font-weight:400">(vs {{ rec.actualFromDate }})</span></span>
+            <span class="progressive-badge" [class.gain]="rec.isPositive" [class.loss]="!rec.isPositive">
+              {{ rec.returnPercent >= 0 ? '+' : '' }}{{ rec.returnPercent | number:'1.2-2' }}%
+            </span>
+          </div>
+          <div class="progressive-body">
+            <div class="progressive-pnl" [class.gain]="rec.isPositive" [class.loss]="!rec.isPositive">
+              {{ rec.periodGainAmount >= 0 ? '+' : '' }}₹{{ rec.periodGainAmount | number:'1.0-0' }}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -140,7 +169,7 @@
               <div><div class="cell-label">Invested</div><div class="cell-value num">₹{{ s.investedAmount | number:'1.0-0' }}</div></div>
               <div><div class="cell-label">Current</div><div class="cell-value num">₹{{ s.currentValue | number:'1.0-0' }}</div></div>
               <div><div class="cell-label">P&amp;L</div><div class="cell-value num" [style.color]="s.gain >= 0 ? 'var(--gain)' : 'var(--loss)'">{{ s.gain >= 0 ? '+' : '' }}₹{{ s.gain | number:'1.0-0' }}</div></div>
-              <div><div class="cell-label">Change</div>
+              <div><div class="cell-label">Overall %</div>
                 <span class="scheme-stamp" [class.gain]="s.gain >= 0" [class.loss]="s.gain < 0">{{ s.gain >= 0 ? '▲' : '▼' }} {{ s.gainPercent >= 0 ? '+' : '' }}{{ s.gainPercent | number:'1.2-2' }}%</span>
               </div>
             </div>
@@ -162,6 +191,18 @@
                 <div class="scheme-donut-legend">
                   <ng-container *ngTemplateOutlet="legendTpl; context:{ $implicit: s.pnl.legend, mini: true }"></ng-container>
                 </div>
+              </div>
+            </div>
+          </div>
+          <!-- Scheme-level Weekly Progressive Daily Ledger -->
+          <div class="scheme-progressive" *ngIf="s.progressiveDailyReturns && s.progressiveDailyReturns.length > 0">
+            <div class="scheme-progressive-title">Weekly Progressive Daily Ledger</div>
+            <div class="scheme-progressive-grid">
+              <div class="scheme-progressive-chip" *ngFor="let rec of s.progressiveDailyReturns">
+                <span class="chip-label">{{ rec.label }} <span style="font-size:9.5px; opacity:0.85">(vs {{ rec.actualFromDate }})</span></span>
+                <span class="chip-val" [class.gain]="rec.isPositive" [class.loss]="!rec.isPositive">
+                  {{ rec.periodGainAmount >= 0 ? '+' : '' }}₹{{ rec.periodGainAmount | number:'1.0-0' }} ({{ rec.returnPercent >= 0 ? '+' : '' }}{{ rec.returnPercent | number:'1.2-2' }}%)
+                </span>
               </div>
             </div>
           </div>
@@ -187,6 +228,29 @@
         <div><div class="cell-label">Current</div><div class="cell-value num">₹{{ selectedScheme.currentValue | number:'1.0-0' }}</div></div>
         <div><div class="cell-label">P&amp;L</div><div class="cell-value num" [style.color]="selectedScheme.gain >= 0 ? 'var(--gain)' : 'var(--loss)'">{{ selectedScheme.gain >= 0 ? '+' : '' }}₹{{ selectedScheme.gain | number:'1.0-0' }}</div></div>
         <div><div class="cell-label">Change</div><div class="cell-value num" [style.color]="selectedScheme.gain >= 0 ? 'var(--gain)' : 'var(--loss)'">{{ selectedScheme.gainPercent >= 0 ? '+' : '' }}{{ selectedScheme.gainPercent | number:'1.2-2' }}%</div></div>
+      </div>
+    </div>
+
+    <!-- Scheme Detail Weekly Progressive Daily Ledger -->
+    <div class="section" *ngIf="selectedScheme?.progressiveDailyReturns?.length">
+      <div class="section-head">
+        <h2 class="section-title">Weekly Progressive Daily Ledger</h2>
+        <span class="section-sub">Step-by-step NAV performance for {{ selectedScheme.schemeName }}</span>
+      </div>
+      <div class="progressive-grid">
+        <div class="progressive-card" *ngFor="let rec of selectedScheme.progressiveDailyReturns">
+          <div class="progressive-header">
+            <span class="progressive-label">{{ rec.label }}</span>
+            <span class="progressive-badge" [class.gain]="rec.isPositive" [class.loss]="!rec.isPositive">
+              {{ rec.returnPercent >= 0 ? '+' : '' }}{{ rec.returnPercent | number:'1.2-2' }}%
+            </span>
+          </div>
+          <div class="progressive-body">
+            <div class="progressive-pnl" [class.gain]="rec.isPositive" [class.loss]="!rec.isPositive">
+              {{ rec.periodGainAmount >= 0 ? '+' : '' }}₹{{ rec.periodGainAmount | number:'1.0-0' }}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 

@@ -76,6 +76,8 @@ interface SchemeCardVm {
   gain: number;
   gainPercent: number;
   isGain: boolean;
+  yesterdayReturn?: QuickReturnDto | null;
+  progressiveDailyReturns?: QuickReturnDto[];
   returns: PeriodDonut;
   pnl: PeriodDonut;
 }
@@ -340,6 +342,33 @@ export class InvestorComponent implements OnInit {
         pct.push(weight > 0 ? weightedPct / weight : 0);
       });
 
+      const yesterdayReturn = this.returnOf(list[0], 'yesterday');
+
+      const progressiveRecords: QuickReturnDto[] = [];
+      if (list.length > 0 && list[0].progressiveDailyReturns) {
+        const nProg = list[0].progressiveDailyReturns.length;
+        for (let k = 0; k < nProg; k++) {
+          let totalGain = 0;
+          let weightedPct = 0;
+          let weight = 0;
+          const baseRec = list[0].progressiveDailyReturns[k];
+          list.forEach(c => {
+            const rec = c.progressiveDailyReturns?.[k];
+            if (rec) {
+              totalGain += rec.periodGainAmount;
+              weightedPct += rec.returnPercent * c.investedAmount;
+              weight += c.investedAmount;
+            }
+          });
+          progressiveRecords.push({
+            ...baseRec,
+            periodGainAmount: Math.round(totalGain * 100) / 100,
+            returnPercent: weight > 0 ? Math.round((weightedPct / weight) * 100) / 100 : baseRec.returnPercent,
+            isPositive: totalGain >= 0
+          });
+        }
+      }
+
       cards.push({
         holdingId: list[0].holdingId,
         schemeCode,
@@ -352,6 +381,8 @@ export class InvestorComponent implements OnInit {
         gain,
         gainPercent,
         isGain: gain >= 0,
+        yesterdayReturn,
+        progressiveDailyReturns: progressiveRecords,
         returns: this.buildPeriodDonut(pct, true, 60, 8),
         pnl: this.buildPeriodDonut(amt, false, 60, 8)
       });
@@ -443,6 +474,46 @@ export class InvestorComponent implements OnInit {
     return this.currentMember?.totalGainPercent ?? 0;
   }
 
+  get yesterdayReturnDto(): QuickReturnDto | null | undefined {
+    if (this.selectedUserId === 'family') {
+      return this.overview?.familyYesterdayReturn;
+    }
+    return this.currentMember?.yesterday;
+  }
+
+  get yesterdayPnl(): number {
+    return this.yesterdayReturnDto?.periodGainAmount ?? 0;
+  }
+
+  get yesterdayPct(): number {
+    return this.yesterdayReturnDto?.returnPercent ?? 0;
+  }
+
+  get yesterdayDates(): string {
+    const reportDate = this.overview?.reportDate ? new Date(this.overview.reportDate) : new Date();
+    const latestStr = reportDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    const fromStr = this.yesterdayReturnDto?.actualFromDate ?? '';
+    if (!fromStr) return latestStr;
+    const fromShort = fromStr.split(' ').slice(0, 2).join(' ');
+    return `${latestStr} vs ${fromShort}`;
+  }
+
+  yesterdayDatesForMember(m: MemberSummaryDto): string {
+    const reportDate = this.overview?.reportDate ? new Date(this.overview.reportDate) : new Date();
+    const latestStr = reportDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    const fromStr = m.yesterday?.actualFromDate ?? '';
+    if (!fromStr) return latestStr;
+    const fromShort = fromStr.split(' ').slice(0, 2).join(' ');
+    return `${latestStr} vs ${fromShort}`;
+  }
+
+  get progressiveDailyReturns(): QuickReturnDto[] {
+    if (this.selectedUserId === 'family') {
+      return (this.overview as any)?.progressiveDailyReturns ?? [];
+    }
+    return (this.currentMember as any)?.progressiveDailyReturns ?? [];
+  }
+
   // ── Investor details helpers ──────────────────────────────────
   relationOf(userId: string): string {
     return this.relationshipMap.get(userId)?.relationshipType ?? '';
@@ -466,6 +537,20 @@ export class InvestorComponent implements OnInit {
   get filteredSchemes(): SchemeCardVm[] {
     if (this.schemeFilter === 'all') return this.schemeCards;
     return this.schemeCards.filter(c => c.schemeName === this.schemeFilter);
+  }
+
+  onSchemeFilterChange(val: string): void {
+    this.schemeFilter = val;
+    if (this.showDetailView) {
+      if (val === 'all') {
+        this.closeSchemeDetail();
+      } else {
+        const match = this.schemeCards.find(c => c.schemeName === val);
+        if (match) {
+          this.openSchemeDetail(match);
+        }
+      }
+    }
   }
 
   // ── Scheme card → detail ledger drill-down ────────────────────
