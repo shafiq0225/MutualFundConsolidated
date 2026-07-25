@@ -558,10 +558,38 @@ tfoot td:first-child { text-align: left; font-family: 'Fraunces', serif; font-we
   .desktop-only { display: none !important; }
   .mobile-only { display: block !important; }
 
-  .stat-grid { grid-template-columns: 1fr 1fr; }
-  .donuts-row { grid-template-columns: 1fr; }
-  .scheme-grid { grid-template-columns: 1fr; }
-  .family-card { grid-template-columns: 1fr 1fr 1fr; row-gap: 10px; }
+  .cover { padding: 20px 14px 30px; }
+  select.investor-select { font-size: 20px; max-width: 100%; }
+  .cover-selects-row { flex-direction: column; align-items: stretch; gap: 14px; }
+  .stat-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
+  .stat-value { font-size: 18px; }
+
+  .donuts-row { grid-template-columns: 1fr; gap: 14px; }
+  .donut-panel { padding: 12px 14px; gap: 12px; }
+  .donut-legend { font-size: 11.5px; line-height: 1.7; }
+  .legend-period { min-width: 68px; }
+  .legend-figure { white-space: nowrap; }
+
+  .section { margin-top: 28px; }
+  .section-head { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .section-title { font-size: 18px; }
+  .reset-member-btn { margin-left: 0; margin-top: 4px; }
+
+  .family-card { grid-template-columns: 1fr 1fr; row-gap: 10px; padding: 12px 14px; }
   .fam-name { grid-column: 1 / -1; }
-  select.investor-select { font-size: 22px; }
+
+  .scheme-grid { grid-template-columns: 1fr; gap: 14px; }
+  .scheme-card { padding: 14px; }
+  .scheme-name { max-width: 100%; font-size: 14.5px; }
+  .scheme-stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .scheme-donuts { grid-template-columns: 1fr; gap: 14px; }
+  .scheme-donut-panel { justify-content: flex-start; gap: 14px; }
+  .scheme-donut-title { font-size: 10px; }
+  .scheme-donut-legend { font-size: 11px; }
+
+  .scheme-progressive-chip { font-size: 10.5px; }
+  .chip-val { white-space: nowrap; }
+
+  .detail-header { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .detail-summary { grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
 }
