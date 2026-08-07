@@ -107,10 +107,16 @@ builder.Services.AddAuthorization(options =>
             ctx.User.HasClaim("role", "Admin") ||
             ctx.User.HasClaim("permissions", "UserManage")));
 
+    options.AddPolicy("CanManageUsersRequirement", policy =>
+        policy.Requirements.Add(new MutualFund.Auth.Infrastructure.Authorization.PermissionRequirement("UserManage")));
+
     options.AddPolicy("CanManageFamily", policy =>
         policy.RequireAssertion(ctx =>
             ctx.User.HasClaim("role", "Admin") ||
             ctx.User.HasClaim("permissions", "FamilyManage")));
+
+    options.AddPolicy("CanManageFamilyRequirement", policy =>
+        policy.Requirements.Add(new MutualFund.Auth.Infrastructure.Authorization.PermissionRequirement("FamilyManage")));
 
     // Scheme policies
     options.AddPolicy("CanManageSchemeEnrollment", policy =>
@@ -396,6 +402,7 @@ app.MapGet("/health", () => Results.Ok(new { status = "Healthy", timestamp = Dat
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<MutualFund.Auth.API.Middleware.ReadOnlyDemoMiddleware>();
 
 app.MapControllers();
 

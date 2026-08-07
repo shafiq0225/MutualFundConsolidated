@@ -1,4 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -46,6 +46,11 @@ namespace MutualFund.Auth.Infrastructure.Services
                 new("approvalStatus", user.ApprovalStatus.ToString()),
                 new("panNumber",      user.PanNumber),
             };
+
+            if (user.Email != null && user.Email.Equals("demo@amfinav.com", StringComparison.OrdinalIgnoreCase))
+            {
+                claims.Add(new Claim("isDemo", "true"));
+            }
 
             // Add each permission as a separate claim
             foreach (var permission in permissions)

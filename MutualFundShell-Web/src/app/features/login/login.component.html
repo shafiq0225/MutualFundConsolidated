@@ -97,6 +97,17 @@
           <span *ngIf="isLoading">Signing in...</span>
         </button>
 
+        <!-- Live Demo 1-Click Showcase Button -->
+        <div class="demo-login-wrapper">
+          <div class="demo-divider"><span>OR</span></div>
+          <button type="button" class="btn btn-demo-live" (click)="onDemoLogin()" [disabled]="isLoading || isDemoLoading">
+            <i class="fas fa-bolt demo-icon"></i>
+            <span *ngIf="!isDemoLoading">⚡ View Live Demo (Read-Only)</span>
+            <span *ngIf="isDemoLoading">Entering Demo...</span>
+          </button>
+          <p class="demo-hint-text">1-Click Instant Access for Recruiters & Visitors</p>
+        </div>
+
         <!-- Footer -->
         <div class="auth-card__footer">
           <p>Don't have an account? <a (click)="goToRegister()">Create one</a></p>

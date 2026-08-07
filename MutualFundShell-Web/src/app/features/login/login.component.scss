@@ -308,6 +308,73 @@
   }
 }
 
+// Demo Login Styling
+.demo-login-wrapper {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.demo-divider {
+  display: flex;
+  align-items: center;
+  margin: 16px 0;
+  
+  &::before, &::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid var(--line-soft, #E2E8F0);
+  }
+  
+  span {
+    padding: 0 10px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted, #64748B);
+    letter-spacing: 0.08em;
+  }
+}
+
+.btn-demo-live {
+  width: 100%;
+  padding: 12px 18px;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .demo-icon {
+    font-size: 15px;
+    color: #FDE047;
+  }
+}
+
+.demo-hint-text {
+  font-size: 11.5px;
+  color: #64748B;
+  margin-top: 8px;
+  font-weight: 500;
+}
+
 // Footer
 .auth-card__footer {
   text-align: center;

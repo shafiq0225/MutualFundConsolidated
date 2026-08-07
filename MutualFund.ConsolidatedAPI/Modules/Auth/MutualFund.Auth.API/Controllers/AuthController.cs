@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using MutualFund.Auth.Application.DTOs.Auth;
@@ -50,6 +50,24 @@ namespace MutualFund.Auth.API.Controllers
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
             var ipAddress = GetIpAddress();
+            var result = await _loginCommand.ExecuteAsync(dto, ipAddress);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// 1-Click Demo Login endpoint for recruiters and public visitors.
+        /// Returns JWT access token marked with isDemo claim in Read-Only mode.
+        /// </summary>
+        [HttpPost("demo-login")]
+        [AllowAnonymous]
+        public async Task<IActionResult> DemoLogin()
+        {
+            var ipAddress = GetIpAddress();
+            var dto = new LoginDto
+            {
+                Email = "demo@amfinav.com",
+                Password = "DemoUser@2026!"
+            };
             var result = await _loginCommand.ExecuteAsync(dto, ipAddress);
             return Ok(result);
         }

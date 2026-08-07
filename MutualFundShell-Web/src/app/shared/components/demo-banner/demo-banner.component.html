@@ -1,0 +1,8 @@
+<div class="demo-top-banner" *ngIf="authService.isLoggedIn() && authService.isDemoUser()">
+  <div class="banner-content">
+    <span class="badge-live-demo">⚡ LIVE DEMO MODE</span>
+    <span class="banner-text">
+      You are exploring live portfolio & P&L analytics in <strong>Read-Only Mode</strong>. Data mutations are disabled to protect live showcase data.
+    </span>
+  </div>
+</div>

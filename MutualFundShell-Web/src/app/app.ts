@@ -5,6 +5,7 @@ import { filter, map, startWith } from 'rxjs';
 import { SidebarComponent } from './layout/sidebar/sidebar.component';
 import { TopbarComponent } from './layout/topbar/topbar.component';
 import { LayoutStateService } from './core/services/layout-state.service';
+import { DemoBannerComponent } from './shared/components/demo-banner/demo-banner.component';
 
 // Routes that render full-bleed with no sidebar/topbar chrome. Written as
 // prefix checks so a future full-page auth route (password reset, etc.)
@@ -18,7 +19,7 @@ function isChromeLess(url: string): boolean {
 @Component({
   selector: 'shell-root',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent, TopbarComponent],
+  imports: [RouterOutlet, SidebarComponent, TopbarComponent, DemoBannerComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })

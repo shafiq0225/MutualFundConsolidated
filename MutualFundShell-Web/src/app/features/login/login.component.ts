@@ -24,6 +24,7 @@ export class LoginComponent {
 
   loginForm: FormGroup;
   isLoading = false;
+  isDemoLoading = false;
   showPassword = false;
 
   private readonly router = inject(Router, { optional: true });
@@ -88,5 +89,26 @@ export class LoginComponent {
   goToRegister(): void {
     this.router?.navigate(['/register']);
     this.switchToRegister.emit();
+  }
+
+  onDemoLogin(): void {
+    this.isDemoLoading = true;
+    this.authService.demoLogin().subscribe({
+      next: () => {
+        this.toastr.info('⚡ Live Demo Mode Active (Read-Only)', 'Welcome!');
+        if (this.loginSuccess.observers.length === 0) {
+          const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/dashboard';
+          this.router?.navigateByUrl(returnUrl);
+        }
+        this.loginSuccess.emit();
+      },
+      error: (err) => {
+        this.isDemoLoading = false;
+        this.toastr.error(err.error?.message || 'Failed to start Live Demo session.');
+      },
+      complete: () => {
+        this.isDemoLoading = false;
+      }
+    });
   }
 }

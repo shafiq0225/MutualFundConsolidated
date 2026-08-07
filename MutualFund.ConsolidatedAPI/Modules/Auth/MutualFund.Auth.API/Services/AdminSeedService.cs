@@ -42,35 +42,66 @@ namespace MutualFund.Auth.API.Services
                 {
                     logger.LogInformation("Admin user already exists and password is valid.");
                 }
-                return;
+            }
+            else
+            {
+                var admin = new ApplicationUser
+                {
+                    Id = "ADMIN0000A",           // ← PAN = Id, same as real users
+                    FirstName = firstName,
+                    LastName = lastName,
+                    Email = adminEmail,
+                    UserName = adminEmail,
+                    PanNumber = "ADMIN0000A",   // placeholder PAN for system admin
+                    Role = UserRole.Admin,
+                    UserType = UserType.None,
+                    ApprovalStatus = ApprovalStatus.Approved,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    ApprovedAt = DateTime.UtcNow
+                };
+
+                var result = await userManager.CreateAsync(admin, adminPassword);
+
+                if (result.Succeeded)
+                    logger.LogInformation(
+                        "✅ Admin user seeded — Email={Email}", adminEmail);
+                else
+                    logger.LogError(
+                        "❌ Admin seed failed: {Errors}",
+                        string.Join(", ", result.Errors
+                            .Select(e => e.Description)));
             }
 
-            var admin = new ApplicationUser
+            // ── Seed Demo User ────────────────────────────────────────────────
+            var demoEmail = "demo@amfinav.com";
+            var demoPassword = "DemoUser@2026!";
+            var existingDemo = await userManager.FindByEmailAsync(demoEmail);
+
+            if (existingDemo == null)
             {
-                Id = "ADMIN0000A",           // ← PAN = Id, same as real users
-                FirstName = firstName,
-                LastName = lastName,
-                Email = adminEmail,
-                UserName = adminEmail,
-                PanNumber = "ADMIN0000A",   // placeholder PAN for system admin
-                Role = UserRole.Admin,
-                UserType = UserType.None,
-                ApprovalStatus = ApprovalStatus.Approved,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                ApprovedAt = DateTime.UtcNow
-            };
+                var demoUser = new ApplicationUser
+                {
+                    Id = "DEMO000000",
+                    FirstName = "Public",
+                    LastName = "Demo Visitor",
+                    Email = demoEmail,
+                    UserName = demoEmail,
+                    PanNumber = "DEMO000000",
+                    Role = UserRole.Admin,
+                    UserType = UserType.None,
+                    ApprovalStatus = ApprovalStatus.Approved,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    ApprovedAt = DateTime.UtcNow
+                };
 
-            var result = await userManager.CreateAsync(admin, adminPassword);
-
-            if (result.Succeeded)
-                logger.LogInformation(
-                    "✅ Admin user seeded — Email={Email}", adminEmail);
-            else
-                logger.LogError(
-                    "❌ Admin seed failed: {Errors}",
-                    string.Join(", ", result.Errors
-                        .Select(e => e.Description)));
+                var demoResult = await userManager.CreateAsync(demoUser, demoPassword);
+                if (demoResult.Succeeded)
+                    logger.LogInformation("✅ Demo user seeded — Email={Email}", demoEmail);
+                else
+                    logger.LogError("❌ Demo user seed failed: {Errors}", string.Join(", ", demoResult.Errors.Select(e => e.Description)));
+            }
         }
     }
 }

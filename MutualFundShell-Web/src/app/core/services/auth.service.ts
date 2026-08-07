@@ -64,6 +64,16 @@ export class AuthService {
     );
   }
 
+  demoLogin(): Observable<TokenResponseDto> {
+    return this.http.post<TokenResponseDto>(`${this.authApi}/demo-login`, {}).pipe(
+      tap(response => {
+        this.setTokens(response.accessToken, response.refreshToken, response.expiresIn);
+        this.isAuthenticatedSubject.next(true);
+        this.currentUserSubject.next(this.decodeToken(response.accessToken));
+      })
+    );
+  }
+
   logout(): Observable<{ message: string }> {
     const refreshToken = this.getRefreshToken();
     return this.http.post<{ message: string }>(`${this.authApi}/logout`, { refreshToken }).pipe(
@@ -130,6 +140,11 @@ export class AuthService {
 
   isAdmin(): boolean {
     return this.getCurrentUser()?.role === 'Admin';
+  }
+
+  isDemoUser(): boolean {
+    const claims = this.getCurrentUser();
+    return (claims as any)?.isDemo === 'true' || claims?.email === 'demo@amfinav.com';
   }
 
   isEmployee(): boolean {

@@ -57,6 +57,9 @@ namespace MutualFund.Auth.Infrastructure
             // ── JWT Settings ─────────────────────────────────────────
             services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
 
+            // ── Custom Authorization Handlers ─────────
+            services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, MutualFund.Auth.Infrastructure.Authorization.PermissionAuthorizationHandler>();
+
             // ── Services ─────────────────────────────────────────────
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IAuthService, AuthService>();
