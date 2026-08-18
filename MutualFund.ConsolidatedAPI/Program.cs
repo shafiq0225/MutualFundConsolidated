@@ -5,6 +5,7 @@ using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using Serilog;
+using Quartz;
 using MutualFund.Auth.API.Middleware;
 
 // Workers and services
@@ -31,7 +32,8 @@ builder.Services.AddControllers()
     .AddApplicationPart(typeof(MutualFund.Auth.API.Controllers.AuthController).Assembly)
     .AddApplicationPart(typeof(MutualFund.Investment.API.Controllers.OrdersController).Assembly)
     .AddApplicationPart(typeof(MutualFund.Scheme.API.Controllers.SchemeEnrollmentController).Assembly)
-    .AddApplicationPart(typeof(MutualFundNav.API.Controllers.NavController).Assembly);
+    .AddApplicationPart(typeof(MutualFundNav.API.Controllers.NavController).Assembly)
+    .AddApplicationPart(typeof(MutualFund.ConsolidatedAPI.Modules.Messaging.Controllers.McpMessagingController).Assembly);
 
 builder.Services.AddEndpointsApiExplorer();
 
@@ -51,6 +53,24 @@ MutualFund.Scheme.Infrastructure.DependencyInjection.AddInfrastructure(builder.S
 // NAV
 MutualFundNav.Application.DependencyInjection.AddApplication(builder.Services);
 MutualFundNav.Infrastructure.DependencyInjection.AddInfrastructure(builder.Services, builder.Configuration);
+
+// MCP Messaging Services
+builder.Services.AddScoped<MutualFund.ConsolidatedAPI.Modules.Messaging.Services.TelegramService>();
+builder.Services.AddScoped<MutualFund.ConsolidatedAPI.Modules.Messaging.Services.WhatsAppService>();
+builder.Services.AddScoped<MutualFund.ConsolidatedAPI.Modules.Messaging.Tools.MessagingMcpTools>();
+
+// ── Quartz.NET 05:05 AM IST Daily Morning Digest ──────────────────
+builder.Services.AddQuartz(q =>
+{
+    q.UseMicrosoftDependencyInjectionJobFactory();
+    var jobKey = new Quartz.JobKey("DailyDigestQuartzJob");
+    q.AddJob<MutualFund.ConsolidatedAPI.Modules.Messaging.Jobs.DailyDigestQuartzJob>(opts => opts.WithIdentity(jobKey));
+    q.AddTrigger(opts => opts
+        .ForJob(jobKey)
+        .WithIdentity("DailyDigestQuartzJob-trigger")
+        .WithCronSchedule("0 5 5 * * ?", x => x.InTimeZone(TimeZoneInfo.FindSystemTimeZoneById("India Standard Time"))));
+});
+builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
 // ── Background Workers ─────────────────────────────────────────────
 builder.Services.AddHostedService<NavDownloadWorker>();
