@@ -1,5 +1,7 @@
+using Quartz;
 using MutualFund.Investment.Application;
 using MutualFund.Investment.Infrastructure;
+using MutualFund.Mcp.API.Jobs;
 using MutualFund.Mcp.API.Services;
 using MutualFund.Mcp.API.Tools;
 
@@ -29,6 +31,22 @@ builder.Services.AddApplication();
 
 // Register MCP Tools
 builder.Services.AddScoped<MessagingMcpTools>();
+
+// Register Quartz.NET Daily Morning Scheduler (05:05 AM IST every day)
+builder.Services.AddQuartz(q =>
+{
+    q.UseMicrosoftDependencyInjectionJobFactory();
+
+    var jobKey = new JobKey("DailyDigestQuartzJob");
+    q.AddJob<DailyDigestQuartzJob>(opts => opts.WithIdentity(jobKey));
+
+    q.AddTrigger(opts => opts
+        .ForJob(jobKey)
+        .WithIdentity("DailyDigestQuartzJob-trigger")
+        .WithCronSchedule("0 5 5 * * ?", x => x.InTimeZone(TimeZoneInfo.FindSystemTimeZoneById("India Standard Time"))));
+});
+
+builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
 // CORS
 builder.Services.AddCors(options =>
