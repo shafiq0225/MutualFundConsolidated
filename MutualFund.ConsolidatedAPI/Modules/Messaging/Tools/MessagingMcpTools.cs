@@ -56,19 +56,24 @@ namespace MutualFund.ConsolidatedAPI.Modules.Messaging.Tools
             if (overviewResult.IsSuccess && overviewResult.Data != null)
             {
                 var p = overviewResult.Data;
-                var pnlSign = p.IsFamilyGain ? "+" : "";
-                var pnlTag = p.IsFamilyGain ? "🟩" : "null";
+                var isGain = p.IsFamilyGain;
+                var pnlTag = isGain ? "🟩" : "🟥";
+                var pnlStr = isGain ? $"+₹ {p.TotalFamilyGain:N0}" : $"-₹ {Math.Abs(p.TotalFamilyGain):N0}";
+                var pnlPctStr = isGain ? $"+{p.TotalFamilyGainPercent:F1}%" : $"{p.TotalFamilyGainPercent:F1}%";
 
                 sb.AppendLine($"💰 <b>Current Value:</b> <code>₹ {p.TotalFamilyCurrentValue:N0}</code>");
                 sb.AppendLine($"💵 <b>Invested:</b> <code>₹ {p.TotalFamilyInvested:N0}</code>");
-                sb.AppendLine($"💹 <b>Net Profit:</b> {pnlTag} <code>{(p.IsFamilyGain ? "+" : "")}₹ {p.TotalFamilyGain:N0}</code> (<b>{pnlSign}{p.TotalFamilyGainPercent:F1}%</b>)");
+                sb.AppendLine($"💹 <b>Net Profit:</b> {pnlTag} <code>{pnlStr}</code> (<b>{pnlPctStr}</b>)");
 
                 if (p.FamilyYesterdayReturn != null)
                 {
                     var dayGain = p.FamilyYesterdayReturn.PeriodGainAmount;
-                    var daySign = dayGain >= 0 ? "+" : "";
-                    var dayTag = dayGain >= 0 ? "🟩" : "🟥";
-                    sb.AppendLine($"🚀 <b>Today P&L:</b> {dayTag} <code>{daySign}₹ {dayGain:N2}</code> (<b>{daySign}{p.FamilyYesterdayReturn.ReturnPercent:F2}%</b>)");
+                    var isDayGain = dayGain >= 0;
+                    var dayTag = isDayGain ? "🟩" : "🟥";
+                    var dayStr = isDayGain ? $"+₹ {dayGain:N2}" : $"-₹ {Math.Abs(dayGain):N2}";
+                    var dayPctStr = isDayGain ? $"+{p.FamilyYesterdayReturn.ReturnPercent:F2}%" : $"{p.FamilyYesterdayReturn.ReturnPercent:F2}%";
+                    
+                    sb.AppendLine($"🚀 <b>Today P&L:</b> {dayTag} <code>{dayStr}</code> (<b>{dayPctStr}</b>)");
                 }
             }
 
@@ -104,19 +109,21 @@ namespace MutualFund.ConsolidatedAPI.Modules.Messaging.Tools
                     var schemeTag = isGain ? "🟩" : "🟥";
                     var pnlLabel = isGain ? "Net Profit" : "Net Loss";
                     var pnlIcon = isGain ? "💹" : "📉";
-                    var sign = isGain ? "+" : "";
+                    var pnlStr = isGain ? $"+₹ {s.TotalProfitLoss:N0}" : $"-₹ {Math.Abs(s.TotalProfitLoss):N0}";
+                    var pnlPctStr = isGain ? $"+{returnPercent:F1}%" : $"{returnPercent:F1}%";
 
                     var todaySchemePnl = Math.Round(s.TotalCurrentValue * (todayReturnPct / 100m), 2);
                     var isTodayGain = todaySchemePnl >= 0;
-                    var todaySign = isTodayGain ? "+" : "";
-                    var todayTag = isTodayGain ? "🟩" : "null";
+                    var todayTag = isTodayGain ? "🟩" : "🟥";
+                    var todayStr = isTodayGain ? $"+₹ {todaySchemePnl:N2}" : $"-₹ {Math.Abs(todaySchemePnl):N2}";
+                    var todayPctStr = isTodayGain ? $"+{todayReturnPct:F2}%" : $"{todayReturnPct:F2}%";
 
                     var safeSchemeName = System.Net.WebUtility.HtmlEncode(s.SchemeName);
 
                     sb.AppendLine($"{schemeTag} <b>{index++}. {safeSchemeName}</b>");
                     sb.AppendLine($"💰 <b>Current Val:</b> <code>₹ {s.TotalCurrentValue:N0}</code> | 💵 <b>Invested:</b> <code>₹ {s.TotalInvested:N0}</code>");
-                    sb.AppendLine($"{pnlIcon} <b>{pnlLabel}:</b> {schemeTag} <code>{sign}₹ {s.TotalProfitLoss:N0}</code> (<b>{sign}{returnPercent:F1}%</b>)");
-                    sb.AppendLine($"🚀 <b>Today P&L:</b> {todayTag} <code>{todaySign}₹ {todaySchemePnl:N2}</code> (<b>{todaySign}{todayReturnPct:F2}%</b>)");
+                    sb.AppendLine($"{pnlIcon} <b>{pnlLabel}:</b> {schemeTag} <code>{pnlStr}</code> (<b>{pnlPctStr}</b>)");
+                    sb.AppendLine($"🚀 <b>Today P&L:</b> {todayTag} <code>{todayStr}</code> (<b>{todayPctStr}</b>)");
                     sb.AppendLine($"📊 <code>{s.TotalUnits:N2}</code> units @ Live NAV <code>₹ {s.LiveNAV:F2}</code> (Avg Buy ₹{s.AvgBuyNAV:F2})\n");
                 }
             }
@@ -132,8 +139,8 @@ namespace MutualFund.ConsolidatedAPI.Modules.Messaging.Tools
                 {
                     var isPos = day.PeriodGainAmount >= 0;
                     var icon = isPos ? "🟩" : "🟥";
-                    var sign = isPos ? "+" : "";
-                    sb.AppendLine($"• <b>{day.Label}</b> : {icon} <code>{sign}₹ {day.PeriodGainAmount:N2}</code>");
+                    var dayStr = isPos ? $"+₹ {day.PeriodGainAmount:N2}" : $"-₹ {Math.Abs(day.PeriodGainAmount):N2}";
+                    sb.AppendLine($"• <b>{day.Label}</b> : {icon} <code>{dayStr}</code>");
                 }
             }
 
