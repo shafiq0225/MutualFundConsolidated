@@ -59,21 +59,9 @@ builder.Services.AddScoped<MutualFund.ConsolidatedAPI.Modules.Messaging.Services
 builder.Services.AddScoped<MutualFund.ConsolidatedAPI.Modules.Messaging.Services.WhatsAppService>();
 builder.Services.AddScoped<MutualFund.ConsolidatedAPI.Modules.Messaging.Tools.MessagingMcpTools>();
 
-// ── Quartz.NET 05:05 AM IST Daily Morning Digest ──────────────────
-builder.Services.AddQuartz(q =>
-{
-    q.UseMicrosoftDependencyInjectionJobFactory();
-    var jobKey = new Quartz.JobKey("DailyDigestQuartzJob");
-    q.AddJob<MutualFund.ConsolidatedAPI.Modules.Messaging.Jobs.DailyDigestQuartzJob>(opts => opts.WithIdentity(jobKey));
-    q.AddTrigger(opts => opts
-        .ForJob(jobKey)
-        .WithIdentity("DailyDigestQuartzJob-trigger")
-        .WithCronSchedule("0 5 5 * * ?", x => x.InTimeZone(TimeZoneInfo.FindSystemTimeZoneById("India Standard Time"))));
-});
-builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
-
 // ── Background Workers ─────────────────────────────────────────────
 builder.Services.AddHostedService<NavDownloadWorker>();
+builder.Services.AddHostedService<MutualFund.ConsolidatedAPI.Modules.Messaging.Workers.DailyDigestWorker>();
 
 // ── JWT Authentication ────────────────────────────────────────────
 var jwtSection = builder.Configuration.GetSection("JwtSettings");
