@@ -257,7 +257,8 @@ namespace MutualFundNav.Application.UseCases.Commands
                     if (!approvedCodes.Contains(schemeCode)) continue;
 
                     DateTime recordNavDate = targetDate.Date;
-                    if (parts.Length >= 6 && DateTime.TryParseExact(parts[5].Trim(),
+                    var dateStr = parts[parts.Length - 1].Trim();
+                    if (DateTime.TryParseExact(dateStr,
                             new[] { "dd-MMM-yyyy", "dd-MM-yyyy", "yyyy-MM-dd" },
                             System.Globalization.CultureInfo.InvariantCulture,
                             System.Globalization.DateTimeStyles.None,
@@ -271,7 +272,8 @@ namespace MutualFundNav.Application.UseCases.Commands
                         continue;
                     }
 
-                    if (!decimal.TryParse(parts[4].Trim(),
+                    var navStr = parts[parts.Length - 2].Trim();
+                    if (!decimal.TryParse(navStr,
                             System.Globalization.NumberStyles.Any,
                             System.Globalization.CultureInfo.InvariantCulture,
                             out var nav))
