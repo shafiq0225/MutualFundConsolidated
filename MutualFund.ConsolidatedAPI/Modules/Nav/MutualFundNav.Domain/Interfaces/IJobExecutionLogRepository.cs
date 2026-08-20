@@ -7,5 +7,6 @@ namespace MutualFundNav.Domain.Interfaces
         Task AddAsync(JobExecutionLog log);
         Task<IEnumerable<JobExecutionLog>> GetRecentAsync(int count = 10);
         Task<JobExecutionLog?> GetLatestAsync();
+        Task<bool> HasJobRunOnDateAsync(string jobNamePrefix, DateTime dateIst);
     }
 }

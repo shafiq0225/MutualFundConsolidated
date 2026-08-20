@@ -2,6 +2,8 @@ using MutualFund.ConsolidatedAPI.Modules.Messaging.Tools;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using MutualFundNav.Domain.Interfaces;
+using MutualFundNav.Domain.Entities;
 
 namespace MutualFund.ConsolidatedAPI.Modules.Messaging.Workers
 {
@@ -9,7 +11,6 @@ namespace MutualFund.ConsolidatedAPI.Modules.Messaging.Workers
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<DailyDigestWorker> _logger;
-        private static DateTime _lastSentDate = DateTime.MinValue;
 
         public DailyDigestWorker(
             IServiceScopeFactory scopeFactory,
@@ -31,15 +32,31 @@ namespace MutualFund.ConsolidatedAPI.Modules.Messaging.Workers
                     var istNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, istZone);
                     var todayTargetTime = istNow.Date.AddHours(5).AddMinutes(5); // 05:05 AM IST
 
-                    // 1. Check if today's 05:05 AM IST has passed and we haven't sent today's digest yet
-                    if (istNow >= todayTargetTime && _lastSentDate.Date < istNow.Date)
+                    // 1. Check database log to verify if today's digest has already been sent
+                    bool alreadySentToday = false;
+                    try
+                    {
+                        using var scope = _scopeFactory.CreateScope();
+                        var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+                        alreadySentToday = await uow.JobLogs.HasJobRunOnDateAsync("DailyDigestWorker", istNow.Date);
+                    }
+                    catch (Exception dbEx)
+                    {
+                        _logger.LogWarning(dbEx, "Failed to query JobExecutionLog for DailyDigestWorker — assuming not sent today.");
+                    }
+
+                    // 2. If 05:05 AM IST has passed today AND it hasn't been sent yet today, trigger dispatch
+                    if (istNow >= todayTargetTime && !alreadySentToday)
                     {
                         _logger.LogInformation("⏰ Triggering daily digest dispatch for {Date:yyyy-MM-dd} (Current IST Time: {Time:HH:mm:ss})...", istNow.Date, istNow);
                         await RunDispatchAsync(stoppingToken);
-                        _lastSentDate = istNow.Date;
+                    }
+                    else if (alreadySentToday)
+                    {
+                        _logger.LogInformation("ℹ️ Daily digest for {Date:yyyy-MM-dd} has already been dispatched today. Skipping duplicate dispatch.", istNow.Date);
                     }
 
-                    // 2. Compute next 05:05 AM IST run time
+                    // 3. Compute next 05:05 AM IST run time
                     var nextRun = todayTargetTime;
                     if (istNow >= todayTargetTime)
                     {
@@ -58,11 +75,22 @@ namespace MutualFund.ConsolidatedAPI.Modules.Messaging.Workers
                     if (!stoppingToken.IsCancellationRequested)
                     {
                         var currentIst = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, istZone);
-                        if (_lastSentDate.Date < currentIst.Date)
+                        bool ranOnWakeup = false;
+                        try
+                        {
+                            using var scope = _scopeFactory.CreateScope();
+                            var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+                            ranOnWakeup = await uow.JobLogs.HasJobRunOnDateAsync("DailyDigestWorker", currentIst.Date);
+                        }
+                        catch (Exception dbEx)
+                        {
+                            _logger.LogWarning(dbEx, "Failed to query JobExecutionLog on timer wakeup.");
+                        }
+
+                        if (!ranOnWakeup)
                         {
                             _logger.LogInformation("⏰ Scheduled 05:05 AM IST timer fired. Executing daily digest dispatch...");
                             await RunDispatchAsync(stoppingToken);
-                            _lastSentDate = currentIst.Date;
                         }
                     }
                 }
@@ -82,6 +110,11 @@ namespace MutualFund.ConsolidatedAPI.Modules.Messaging.Workers
 
         private async Task RunDispatchAsync(CancellationToken stoppingToken)
         {
+            var startedAt = DateTime.UtcNow;
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            bool success = false;
+            string? error = null;
+
             try
             {
                 using var scope = _scopeFactory.CreateScope();
@@ -94,10 +127,37 @@ namespace MutualFund.ConsolidatedAPI.Modules.Messaging.Workers
                 _logger.LogInformation("Sending WhatsApp daily digest...");
                 var waResult = await mcpTools.SendDailyDigestToWhatsAppAsync();
                 _logger.LogInformation("WhatsApp Daily Digest result: {Result}", waResult ? "SUCCESS" : "FAILED");
+
+                success = tgResult || waResult;
             }
             catch (Exception ex)
             {
+                error = ex.Message;
                 _logger.LogError(ex, "Error executing RunDispatchAsync in DailyDigestWorker");
+            }
+            finally
+            {
+                stopwatch.Stop();
+                try
+                {
+                    using var scope = _scopeFactory.CreateScope();
+                    var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+                    await uow.JobLogs.AddAsync(new JobExecutionLog
+                    {
+                        JobName = "DailyDigestWorker.Dispatch",
+                        StartedAt = startedAt,
+                        CompletedAt = DateTime.UtcNow,
+                        IsSuccess = success,
+                        ErrorMessage = error,
+                        ElapsedSeconds = stopwatch.Elapsed.TotalSeconds,
+                        Details = "Daily digest dispatch to Telegram & WhatsApp"
+                    });
+                    await uow.CompleteAsync();
+                }
+                catch (Exception logEx)
+                {
+                    _logger.LogWarning(logEx, "Failed to persist JobExecutionLog for DailyDigestWorker");
+                }
             }
         }
 
