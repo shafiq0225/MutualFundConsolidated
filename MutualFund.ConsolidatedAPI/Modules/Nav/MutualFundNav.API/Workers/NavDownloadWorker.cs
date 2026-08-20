@@ -76,6 +76,10 @@ namespace MutualFundNav.API.Workers
                 var dateHelper = scope.ServiceProvider.GetRequiredService<IDateHelper>();
                 var schemeUow = scope.ServiceProvider.GetRequiredService<MutualFund.Scheme.Domain.Interfaces.IUnitOfWork>();
 
+                var istZone = GetIstTimeZone();
+                var istNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, istZone);
+                bool ranToday = await uow.JobLogs.HasJobRunOnDateAsync("NavDownloadWorker", istNow.Date);
+
                 var targetDate = await dateHelper.GetTargetNavDateAsync();
 
                 // Check if DetailedSchemes has data for targetDate
@@ -83,18 +87,18 @@ namespace MutualFundNav.API.Workers
                 var latestInDb = latestTradingDates.FirstOrDefault();
                 bool hasTargetDateData = latestTradingDates.Count > 0 && latestInDb.Date >= targetDate.Date;
 
-                if (!hasTargetDateData)
+                if (!ranToday || !hasTargetDateData)
                 {
                     _logger.LogWarning(
-                        "Startup check: DB NAV date ({Latest:yyyy-MM-dd}) is behind target date ({Target:yyyy-MM-dd}). Triggering automatic NAV download & sync...",
-                        latestInDb, targetDate);
+                        "Startup check: Job ran today? {RanToday}. DB NAV date ({Latest:yyyy-MM-dd}) vs Target ({Target:yyyy-MM-dd}). Triggering automatic NAV download & sync...",
+                        ranToday, latestInDb, targetDate);
 
                     await RunJobAsync("NavDownloadWorker.StartupSync", ct);
                     return;
                 }
 
                 _logger.LogInformation(
-                    "Startup check: DB is up to date with NAV for {Date}.",
+                    "Startup check: NAV download has run today and DB is up to date for {Date}.",
                     targetDate.ToString("yyyy-MM-dd"));
             }
             catch (Exception ex)
