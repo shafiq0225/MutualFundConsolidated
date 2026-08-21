@@ -1,4 +1,4 @@
-﻿using MutualFund.Auth.Application.DTOs.Auth;
+using MutualFund.Auth.Application.DTOs.Auth;
 using MutualFund.Auth.Domain.Interfaces;
 using MutualFund.Auth.Infrastructure.Settings;
 using Microsoft.Extensions.Logging;
@@ -38,6 +38,7 @@ namespace MutualFund.Auth.Application.UseCases.Commands
                 RefreshToken = refreshToken,
                 AccessTokenExpiresAt = DateTime.UtcNow.AddMinutes(
                     _jwtSettings.TokenExpiryMinutes),
+                ExpiresIn = _jwtSettings.TokenExpiryMinutes * 60,
                 TokenType = "Bearer"
             };
         }

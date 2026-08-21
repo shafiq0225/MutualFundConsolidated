@@ -145,7 +145,40 @@ namespace MutualFund.Auth.Infrastructure.Services
                 ?? throw new InvalidRefreshTokenException();
 
             if (!stored.IsActive)
+            {
+                // ── Concurrency Grace Period for Parallel Requests ─────────────
+                // If this token was revoked within the last 30 seconds and has already been replaced,
+                // return a fresh access token with the active replacement token instead of throwing!
+                if (stored.IsRevoked && stored.RevokedAt.HasValue &&
+                    DateTime.UtcNow - stored.RevokedAt.Value < TimeSpan.FromSeconds(30) &&
+                    !string.IsNullOrEmpty(stored.ReplacedByToken))
+                {
+                    var activeReplacement = await _context.RefreshTokens
+                        .FirstOrDefaultAsync(r => r.Token == stored.ReplacedByToken && r.RevokedAt == null);
+
+                    if (activeReplacement != null && !activeReplacement.IsExpired)
+                    {
+                        List<string> perms;
+                        if (stored.User.Role == UserRole.Admin)
+                        {
+                            perms = Domain.Enums.PermissionType.GetAll().ToList();
+                        }
+                        else
+                        {
+                            perms = await _context.UserPermissions
+                                .AsNoTracking()
+                                .Where(up => up.UserId == stored.User.Id && up.RevokedAt == null)
+                                .Select(up => up.Permission.Code)
+                                .ToListAsync();
+                        }
+
+                        var newAccToken = _tokenService.GenerateAccessToken(stored.User, perms);
+                        return (newAccToken, activeReplacement.Token);
+                    }
+                }
+
                 throw new InvalidRefreshTokenException();
+            }
 
             // Rotate — revoke old, create new
             stored.RevokedAt = DateTime.UtcNow;

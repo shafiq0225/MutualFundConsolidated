@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, tap } from 'rxjs';
+import { Observable, BehaviorSubject, tap, throwError, timer, Subscription } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface LoginDto {
@@ -11,7 +11,7 @@ export interface LoginDto {
 export interface TokenResponseDto {
   accessToken: string;
   refreshToken: string;
-  expiresIn: number;
+  expiresIn?: number;
 }
 
 export interface DecodedTokenClaims {
@@ -42,6 +42,7 @@ export class AuthService {
   private readonly authApi = `${environment.apiUrl}/api/auth`;
   private readonly tokenKey = 'access_token';
   private readonly refreshTokenKey = 'refresh_token';
+  private refreshTimerSub?: Subscription;
   
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
@@ -51,7 +52,11 @@ export class AuthService {
 
   constructor(private http: HttpClient) {
     this.checkAuthStatus();
-    this.currentUserSubject.next(this.decodeStoredToken());
+    const token = this.getAccessToken();
+    if (token) {
+      this.currentUserSubject.next(this.decodeToken(token));
+      this.scheduleTokenRefresh(token);
+    }
   }
 
   login(dto: LoginDto): Observable<TokenResponseDto> {
@@ -74,7 +79,27 @@ export class AuthService {
     );
   }
 
+  refreshToken(): Observable<TokenResponseDto> {
+    const refreshToken = this.getRefreshToken();
+    if (!refreshToken) {
+      return throwError(() => new Error('No refresh token available'));
+    }
+
+    return this.http.post<TokenResponseDto>(`${this.authApi}/refresh`, { refreshToken }).pipe(
+      tap(response => {
+        this.setTokens(response.accessToken, response.refreshToken, response.expiresIn);
+        this.isAuthenticatedSubject.next(true);
+        this.currentUserSubject.next(this.decodeToken(response.accessToken));
+      })
+    );
+  }
+
   logout(): Observable<{ message: string }> {
+    if (this.refreshTimerSub) {
+      this.refreshTimerSub.unsubscribe();
+      this.refreshTimerSub = undefined;
+    }
+
     const refreshToken = this.getRefreshToken();
     return this.http.post<{ message: string }>(`${this.authApi}/logout`, { refreshToken }).pipe(
       tap(() => {
@@ -96,13 +121,48 @@ export class AuthService {
   private setTokens(accessToken: string, refreshToken: string, expiresIn?: number): void {
     localStorage.setItem(this.tokenKey, accessToken);
     localStorage.setItem(this.refreshTokenKey, refreshToken);
-    setCookie(COOKIE_NAME, accessToken, expiresIn && expiresIn > 0 ? expiresIn : COOKIE_MAX_AGE_SECONDS);
+
+    const expiry = this.getTokenExpiry(accessToken);
+    const nowSec = Math.floor(Date.now() / 1000);
+    const maxAge = expiry && expiry > nowSec ? expiry - nowSec : (expiresIn && expiresIn > 0 ? expiresIn : COOKIE_MAX_AGE_SECONDS);
+
+    setCookie(COOKIE_NAME, accessToken, maxAge);
+    this.scheduleTokenRefresh(accessToken);
   }
 
   private clearTokens(): void {
+    if (this.refreshTimerSub) {
+      this.refreshTimerSub.unsubscribe();
+      this.refreshTimerSub = undefined;
+    }
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.refreshTokenKey);
     clearCookie(COOKIE_NAME);
+  }
+
+  private scheduleTokenRefresh(accessToken: string): void {
+    if (this.refreshTimerSub) {
+      this.refreshTimerSub.unsubscribe();
+      this.refreshTimerSub = undefined;
+    }
+
+    const expiry = this.getTokenExpiry(accessToken);
+    if (!expiry) return;
+
+    const nowSec = Math.floor(Date.now() / 1000);
+    const ttlSeconds = expiry - nowSec;
+
+    // Trigger auto-refresh 2 minutes before expiry (or 10s if already close)
+    const refreshDelaySec = Math.max(10, ttlSeconds - 120);
+
+    this.refreshTimerSub = timer(refreshDelaySec * 1000).subscribe(() => {
+      if (this.getRefreshToken()) {
+        this.refreshToken().subscribe({
+          next: () => console.log('🔄 Access token silently refreshed before expiry'),
+          error: (err) => console.warn('Automatic background token refresh failed:', err)
+        });
+      }
+    });
   }
 
   private checkAuthStatus(): void {
@@ -110,15 +170,16 @@ export class AuthService {
   }
 
   private hasValidToken(): boolean {
+    const refreshToken = this.getRefreshToken();
+    if (refreshToken) {
+      return true;
+    }
+
     const token = this.getAccessToken();
     if (!token) return false;
 
     const expiry = this.getTokenExpiry(token);
-    if (expiry === null || expiry * 1000 <= Date.now()) {
-      this.clearTokens();
-      return false;
-    }
-    return true;
+    return expiry !== null && expiry * 1000 > Date.now();
   }
 
   private getTokenExpiry(token: string): number | null {
