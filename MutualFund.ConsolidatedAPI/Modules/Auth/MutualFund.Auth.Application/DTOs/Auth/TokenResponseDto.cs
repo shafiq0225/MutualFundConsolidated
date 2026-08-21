@@ -1,10 +1,11 @@
-﻿namespace MutualFund.Auth.Application.DTOs.Auth
+namespace MutualFund.Auth.Application.DTOs.Auth
 {
     public class TokenResponseDto
     {
         public string AccessToken { get; set; } = string.Empty;
         public string RefreshToken { get; set; } = string.Empty;
         public DateTime AccessTokenExpiresAt { get; set; }
+        public int ExpiresIn { get; set; }
         public string TokenType { get; set; } = "Bearer";
     }
 }

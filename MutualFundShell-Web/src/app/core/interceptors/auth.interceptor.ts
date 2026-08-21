@@ -1,23 +1,27 @@
-import { HttpInterceptorFn, HttpErrorResponse, HttpBackend, HttpClient, HttpRequest, HttpHandlerFn, HttpEvent } from '@angular/common/http';
+import { HttpInterceptorFn, HttpErrorResponse, HttpRequest, HttpHandlerFn, HttpEvent } from '@angular/common/http';
 import { inject } from '@angular/core';
+import { AuthService } from '../services/auth.service';
 import { AuthCookieService } from '../services/auth-cookie.service';
 import { environment } from '../../../environments/environment';
-import { catchError, switchMap, throwError, NEVER, BehaviorSubject, filter, take, Observable } from 'rxjs';
+import { catchError, switchMap, throwError, BehaviorSubject, filter, take, Observable } from 'rxjs';
 
 let isRefreshing = false;
 const refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
+  const authService = inject(AuthService);
   const authCookie = inject(AuthCookieService);
-  const backend = inject(HttpBackend);
-  const http = new HttpClient(backend); // Bypasses interceptors to avoid circular injection
-  
-  const token = authCookie.getToken();
+
+  const token = authCookie.getToken() || authService.getAccessToken();
   const isGatewayRequest = req.url.startsWith(environment.apiUrl);
+  const isAuthEndpoint = req.url.includes('/api/auth/login') ||
+                         req.url.includes('/api/auth/register') ||
+                         req.url.includes('/api/auth/refresh') ||
+                         req.url.includes('/api/auth/demo-login');
   const isRetry = req.headers.has('X-Token-Retry');
 
   let authReq = req;
-  if (token && isGatewayRequest) {
+  if (token && isGatewayRequest && !isAuthEndpoint) {
     authReq = req.clone({
       setHeaders: { Authorization: `Bearer ${token}` }
     });
@@ -25,37 +29,40 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authReq).pipe(
     catchError((error) => {
-      if (error instanceof HttpErrorResponse && error.status === 401 && isGatewayRequest && !isRetry) {
-        return handle401Error(authReq, next, http);
+      if (
+        error instanceof HttpErrorResponse && 
+        error.status === 401 && 
+        isGatewayRequest && 
+        !isAuthEndpoint && 
+        !isRetry
+      ) {
+        return handle401Error(authReq, next, authService);
       }
       return throwError(() => error);
     })
   );
 };
 
-function handle401Error(req: HttpRequest<unknown>, next: HttpHandlerFn, http: HttpClient): Observable<HttpEvent<unknown>> {
+function handle401Error(
+  req: HttpRequest<unknown>, 
+  next: HttpHandlerFn, 
+  authService: AuthService
+): Observable<HttpEvent<unknown>> {
   if (!isRefreshing) {
     isRefreshing = true;
     refreshTokenSubject.next(null);
 
-    const refreshToken = localStorage.getItem('refresh_token');
+    const refreshToken = authService.getRefreshToken();
     if (!refreshToken) {
       isRefreshing = false;
-      document.cookie = `mf_access_token=; path=/; max-age=0; SameSite=Lax`;
+      document.cookie = 'mf_access_token=; path=/; max-age=0; SameSite=Lax';
       window.location.href = '/login';
-      return NEVER;
+      return throwError(() => new Error('No refresh token available'));
     }
 
-    return http.post<any>(`${environment.apiUrl}/api/auth/refresh`, { refreshToken }).pipe(
-      switchMap((res: any) => {
+    return authService.refreshToken().pipe(
+      switchMap((res) => {
         isRefreshing = false;
-
-        localStorage.setItem('access_token', res.accessToken);
-        localStorage.setItem('refresh_token', res.refreshToken);
-
-        const maxAge = res.expiresIn && res.expiresIn > 0 ? res.expiresIn : 60 * 60 * 8;
-        document.cookie = `mf_access_token=${encodeURIComponent(res.accessToken)}; path=/; max-age=${maxAge}; SameSite=Lax`;
-
         refreshTokenSubject.next(res.accessToken);
 
         return next(req.clone({
@@ -67,20 +74,22 @@ function handle401Error(req: HttpRequest<unknown>, next: HttpHandlerFn, http: Ht
       }),
       catchError((err) => {
         isRefreshing = false;
+        refreshTokenSubject.next(null);
         
+        // Clear tokens and redirect only when the refresh token is genuinely invalid/expired
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
-        document.cookie = `mf_access_token=; path=/; max-age=0; SameSite=Lax`;
+        document.cookie = 'mf_access_token=; path=/; max-age=0; SameSite=Lax';
 
         window.location.href = '/login';
-        return NEVER;
+        return throwError(() => err);
       })
     );
   } else {
     return refreshTokenSubject.pipe(
-      filter(token => token !== null),
+      filter((token) => token !== null),
       take(1),
-      switchMap(token => {
+      switchMap((token) => {
         return next(req.clone({
           setHeaders: { 
             Authorization: `Bearer ${token}`,
