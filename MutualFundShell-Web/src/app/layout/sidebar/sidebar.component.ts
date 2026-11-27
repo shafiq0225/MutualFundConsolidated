@@ -19,6 +19,7 @@ interface NavItem {
    * NavComparisonController).
    */
   requiresPermission?: string;
+  adminOnly?: boolean;
 }
 
 @Component({
@@ -41,6 +42,8 @@ export class SidebarComponent {
     { label: 'Scheme', icon: 'fa-list-check', route: '/scheme', soon: false, requiresPermission: 'scheme.manage' },
     { label: 'NAV Comparison', icon: 'fa-chart-line', route: '/nav-comparison', soon: false },
     { label: 'Orders', icon: 'fa-receipt', route: '/orders', soon: false, requiresPermission: 'order.view' },
+    { label: 'Order Corrections', icon: 'fa-wrench', route: '/order-corrections', soon: false, adminOnly: true },
+    { label: 'Sanity Check', icon: 'fa-shield-halved', route: '/order-sanity-check', soon: false, requiresPermission: 'order.view' },
     { label: 'Portfolio', icon: 'fa-wallet', route: '/portfolio', soon: false, requiresPermission: 'investor.view' }
   ];
 
@@ -58,7 +61,9 @@ export class SidebarComponent {
 
   private visibleNavItems(): NavItem[] {
     return this.allNavItems.filter(
-      (item) => !item.requiresPermission || this.authCookie.canManage(item.requiresPermission)
+      (item) =>
+        (!item.adminOnly || this.authCookie.isAdmin()) &&
+        (!item.requiresPermission || this.authCookie.canManage(item.requiresPermission))
     );
   }
 }

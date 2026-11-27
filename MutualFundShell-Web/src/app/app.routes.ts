@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { PlaceholderComponent } from './features/placeholder/placeholder.component';
-import { authGuard, requiresPermission } from './core/guards/auth.guard';
+import { authGuard, requiresPermission, adminOnlyGuard } from './core/guards/auth.guard';
 
 // Import real components
 import { LoginComponent } from './features/login/login.component';
@@ -12,6 +12,8 @@ import { UsersComponent } from './features/users/users.component';
 import { PendingComponent } from './features/users/pending/pending.component';
 import { FamilyComponent } from './features/family/family.component';
 import { OrdersComponent } from './features/orders/orders.component';
+import { OrderCorrectionsComponent } from './features/order-corrections/order-corrections.component';
+import { OrderSanityCheckComponent } from './features/order-sanity-check/order-sanity-check.component';
 import { InvestorComponent } from './features/investor/investor.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 
@@ -29,6 +31,8 @@ export const routes: Routes = [
   { path: 'family-groups', component: FamilyComponent, title: 'Family Groups', canActivate: [authGuard, requiresPermission('family.manage')] },
   
   { path: 'orders', component: OrdersComponent, title: 'Orders', canActivate: [authGuard, requiresPermission('order.view')] },
+  { path: 'order-corrections', component: OrderCorrectionsComponent, title: 'Order Corrections', canActivate: [authGuard, adminOnlyGuard] },
+  { path: 'order-sanity-check', component: OrderSanityCheckComponent, title: 'Sanity Check', canActivate: [authGuard, requiresPermission('order.view')] },
   { path: 'portfolio', component: InvestorComponent, title: 'Portfolio', canActivate: [authGuard, requiresPermission('investor.view')] },
 
   { path: 'dashboard', component: DashboardComponent, title: 'Dashboard', canActivate: [authGuard] },

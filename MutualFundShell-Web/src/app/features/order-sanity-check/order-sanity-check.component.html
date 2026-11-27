@@ -1,0 +1,250 @@
+<div class="sanity-page">
+  <div class="sanity-header">
+    <div>
+      <h1>Purchase NAV &amp; Units Sanity Check</h1>
+      <p>Validate entered Purchase NAV &amp; Units against AMFI historical NAVs before saving, or audit existing orders for swapped fields and duplicates.</p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn" type="button" [class.active]="activeTab === 'audit'" (click)="switchTab('audit')">
+      <i class="fas fa-magnifying-glass-chart"></i> Existing Orders Audit Scanner
+    </button>
+    <button class="tab-btn" type="button" [class.active]="activeTab === 'precheck'" (click)="switchTab('precheck')">
+      <i class="fas fa-calculator"></i> Pre-Order Sanity Calculator
+    </button>
+  </div>
+
+  @if (loading) {
+    <app-loading-spinner message="Scanning orders against AMFI NAV history..." />
+  } @else {
+    <!-- TAB 1: EXISTING ORDERS AUDIT SCANNER -->
+    @if (activeTab === 'audit' && summary) {
+      <div class="kpi-grid">
+        <div class="kpi-card" (click)="setSeverityFilter('all')">
+          <div class="kpi-label">Orders Scanned</div>
+          <div class="kpi-value mono">{{ summary.totalScanned }}</div>
+          <div class="kpi-sub">Click to show all</div>
+        </div>
+        <div class="kpi-card critical" (click)="setSeverityFilter('Critical')">
+          <div class="kpi-label">Critical Mismatches (&gt; 5%)</div>
+          <div class="kpi-value mono">{{ summary.criticalCount }}</div>
+          <div class="kpi-sub">NAV mismatch / swapped units</div>
+        </div>
+        <div class="kpi-card warning" (click)="setSeverityFilter('Warning')">
+          <div class="kpi-label">Warnings (1% – 5% / Dup)</div>
+          <div class="kpi-value mono">{{ summary.warningCount }}</div>
+          <div class="kpi-sub">Minor drift or duplicate</div>
+        </div>
+        <div class="kpi-card healthy" (click)="setSeverityFilter('OK')">
+          <div class="kpi-label">Verified Healthy (&le; 1%)</div>
+          <div class="kpi-value mono">{{ summary.healthyCount }}</div>
+          <div class="kpi-sub">Matches AMFI NAV &amp; math</div>
+        </div>
+      </div>
+
+      <div class="card filter-bar">
+        <div class="filter-controls">
+          <select class="select" [(ngModel)]="severityFilter" (ngModelChange)="applyFilters()">
+            <option value="all">All Severities ({{ summary.totalScanned }})</option>
+            <option value="Critical">Critical Only ({{ summary.criticalCount }})</option>
+            <option value="Warning">Warning Only ({{ summary.warningCount }})</option>
+            <option value="NoAmfiData">No AMFI Data ({{ summary.noAmfiDataCount }})</option>
+            <option value="OK">Healthy Only ({{ summary.healthyCount }})</option>
+          </select>
+          <input
+            type="text"
+            class="input"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="applyFilters()"
+            placeholder="Search Order #, Scheme, or Finding..."
+          />
+        </div>
+        <button class="btn btn-primary" type="button" [disabled]="scanning" (click)="reScanOrders()">
+          <i class="fas fa-rotate"></i>
+          {{ scanning ? 'Scanning...' : 'Re-Scan All Orders vs AMFI' }}
+        </button>
+      </div>
+
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Severity</th>
+              <th>Order # &amp; Date</th>
+              <th>Scheme</th>
+              <th class="right">Invested (₹)</th>
+              <th class="right">Entered NAV</th>
+              <th class="right">AMFI NAV</th>
+              <th class="right">Variance</th>
+              <th class="right">Units (Ent / Exp)</th>
+              <th>Diagnostic Finding</th>
+              @if (auth.isAdmin()) {
+                <th>Action</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of filteredItems; track item.orderId) {
+              <tr>
+                <td>
+                  <span
+                    class="sev-pill"
+                    [class.sev-critical]="item.severity === 'Critical'"
+                    [class.sev-warning]="item.severity === 'Warning'"
+                    [class.sev-ok]="item.severity === 'OK'"
+                    [class.sev-nodata]="item.severity === 'NoAmfiData'"
+                  >
+                    {{ item.severity }}
+                  </span>
+                </td>
+                <td>
+                  <div class="mono order-no">{{ item.orderNumber }}</div>
+                  <div class="mono sub-text">{{ formatDate(item.orderDate) }}</div>
+                </td>
+                <td class="scheme-name">{{ item.schemeName }}</td>
+                <td class="mono right">₹{{ item.investedAmount | number:'1.2-2' }}</td>
+                <td class="mono right bold">{{ item.enteredNav | number:'1.4-4' }}</td>
+                <td class="mono right">
+                  @if (item.amfiNav != null) {
+                    <div>{{ item.amfiNav | number:'1.4-4' }}</div>
+                    <div class="sub-text mono">{{ formatDate(item.amfiNavDate) }}</div>
+                  } @else {
+                    <span class="muted">—</span>
+                  }
+                </td>
+                <td class="mono right bold" [class.text-danger]="item.severity === 'Critical'" [class.text-ok]="item.severity === 'OK'">
+                  @if (item.variancePercent != null) {
+                    {{ item.variancePercent >= 0 ? '+' : '' }}{{ item.variancePercent | number:'1.2-2' }}%
+                  } @else {
+                    —
+                  }
+                </td>
+                <td class="mono right">
+                  <div>{{ item.enteredUnits | number:'1.4-4' }}</div>
+                  @if (item.expectedUnits != null) {
+                    <div class="sub-text">exp: {{ item.expectedUnits | number:'1.4-4' }}</div>
+                  }
+                </td>
+                <td class="finding-cell">{{ item.finding }}</td>
+                @if (auth.isAdmin()) {
+                  <td>
+                    @if (item.severity === 'Critical' || item.severity === 'Warning') {
+                      <button class="btn btn-outline btn-sm" type="button" (click)="fixInOrderCorrections(item.orderNumber)">
+                        <i class="fas fa-wrench"></i> Fix Order
+                      </button>
+                    } @else {
+                      <span class="muted">—</span>
+                    }
+                  </td>
+                }
+              </tr>
+            } @empty {
+              <tr>
+                <td [attr.colspan]="auth.isAdmin() ? 10 : 9" class="empty-cell">No matching orders found.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- TAB 2: PRE-ORDER SANITY CALCULATOR -->
+    @if (activeTab === 'precheck') {
+      <div class="calc-layout">
+        <div class="card calc-panel">
+          <div class="panel-title">
+            <i class="fas fa-sliders primary-icon"></i> Enter Transaction Details to Verify
+          </div>
+          <form [formGroup]="calcForm" (ngSubmit)="runPreCheck()">
+            <div class="form-grid">
+              <div class="field full">
+                <label>Approved Mutual Fund Scheme</label>
+                <select class="select" formControlName="schemeCode">
+                  @for (sch of schemes; track sch.schemeCode) {
+                    <option [value]="sch.schemeCode">{{ sch.schemeName }}</option>
+                  }
+                </select>
+              </div>
+              <div class="field">
+                <label>Order / Purchase Date</label>
+                <input type="date" class="input" formControlName="orderDate" />
+              </div>
+              <div class="field">
+                <label>Invested Amount (₹)</label>
+                <input type="number" step="0.01" min="0.01" class="input mono" formControlName="investedAmount" />
+              </div>
+              <div class="field">
+                <label>Entered Purchase NAV (₹)</label>
+                <input type="number" step="0.0001" min="0.0001" class="input mono" formControlName="purchaseNAV" placeholder="e.g. 156.0000" />
+              </div>
+              <div class="field">
+                <label>Entered Units (Optional)</label>
+                <input type="number" step="0.0001" class="input mono" formControlName="unitsAllotted" placeholder="Auto-calculated if blank" />
+              </div>
+            </div>
+
+            <div class="calc-actions">
+              <button class="btn btn-primary" type="submit" [disabled]="checkingPreOrder">
+                <i class="fas fa-shield-halved"></i>
+                {{ checkingPreOrder ? 'Checking...' : 'Check Against AMFI NAV' }}
+              </button>
+              @if (preCheckResult?.amfiNav) {
+                <button class="btn btn-outline" type="button" (click)="applyAmfiNav()">
+                  <i class="fas fa-wand-magic-sparkles"></i> Auto-Fill AMFI NAV ({{ preCheckResult?.amfiNav | number:'1.4-4' }})
+                </button>
+              }
+              <button class="btn btn-outline" type="button" (click)="goToCreateOrder()">
+                <i class="fas fa-arrow-up-right-from-square"></i> Go to Orders
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card calc-panel">
+          <div class="panel-title">
+            <i class="fas fa-circle-check primary-icon"></i> Sanity Check Result
+          </div>
+          @if (!preCheckResult) {
+            <div class="empty-verdict">
+              Enter your transaction details and click <strong>Check Against AMFI NAV</strong> to verify Purchase NAV and Units before creating an order.
+            </div>
+          } @else {
+            <div
+              class="verdict-box"
+              [class.critical]="preCheckResult.severity === 'Critical'"
+              [class.warning]="preCheckResult.severity === 'Warning'"
+              [class.pass]="preCheckResult.severity === 'OK'"
+            >
+              <div class="verdict-header">
+                <span class="verdict-title">{{ preCheckResult.severity }}</span>
+                @if (preCheckResult.variancePercent != null) {
+                  <span class="mono bold">
+                    {{ preCheckResult.variancePercent >= 0 ? '+' : '' }}{{ preCheckResult.variancePercent | number:'1.2-2' }}%
+                  </span>
+                }
+              </div>
+              <p class="verdict-msg">{{ preCheckResult.message }}</p>
+            </div>
+
+            <div class="compare-grid">
+              <div class="compare-card">
+                <div class="tag">Your Entered Values</div>
+                <div class="compare-row"><span>Purchase NAV</span><strong class="mono">{{ calcForm.get('purchaseNAV')?.value | number:'1.4-4' }}</strong></div>
+                <div class="compare-row"><span>Calculated Units</span><strong class="mono">{{ preCheckResult.calculatedUnits | number:'1.4-4' }}</strong></div>
+                <div class="compare-row"><span>Unit Math Check</span><strong class="mono">{{ preCheckResult.unitMathOk ? 'OK' : 'Mismatch' }}</strong></div>
+              </div>
+              <div class="compare-card alt">
+                <div class="tag">AMFI Verified (DetailedSchemes)</div>
+                <div class="compare-row"><span>AMFI NAV</span><strong class="mono">{{ preCheckResult.amfiNav != null ? (preCheckResult.amfiNav | number:'1.4-4') : 'N/A' }}</strong></div>
+                <div class="compare-row"><span>Expected Units</span><strong class="mono">{{ preCheckResult.expectedUnits != null ? (preCheckResult.expectedUnits | number:'1.4-4') : 'N/A' }}</strong></div>
+                <div class="compare-row"><span>AMFI Date</span><strong class="mono">{{ formatDate(preCheckResult.amfiNavDate) }}</strong></div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  }
+</div>
