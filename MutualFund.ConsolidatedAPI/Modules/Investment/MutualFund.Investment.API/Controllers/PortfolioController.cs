@@ -1,6 +1,7 @@
 using MutualFund.Investment.Application.Portfolio.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MutualFundNav.API.Services;
 
 namespace MutualFund.Investment.API.Controllers
 {
@@ -12,17 +13,20 @@ namespace MutualFund.Investment.API.Controllers
         private readonly GetFamilyPortfolioQuery _getFamilyPortfolio;
         private readonly GetAllHoldingsQuery _getAllHoldings;
         private readonly ILogger<PortfolioController> _logger;
+        private readonly NavSyncCoordinator? _navSyncCoordinator;
 
         public PortfolioController(
             GetPortfolioQuery getPortfolio,
             GetFamilyPortfolioQuery getFamilyPortfolio,
             GetAllHoldingsQuery getAllHoldings,
-            ILogger<PortfolioController> logger)
+            ILogger<PortfolioController> logger,
+            NavSyncCoordinator? navSyncCoordinator = null)
         {
             _getPortfolio = getPortfolio;
             _getFamilyPortfolio = getFamilyPortfolio;
             _getAllHoldings = getAllHoldings;
             _logger = logger;
+            _navSyncCoordinator = navSyncCoordinator;
         }
 
         // ── GET /api/portfolio/me ──────────────────────────────────
@@ -35,6 +39,9 @@ namespace MutualFund.Investment.API.Controllers
         public async Task<IActionResult> GetMyPortfolio(
             [FromQuery] DateTime? asOfDate = null)
         {
+            if (_navSyncCoordinator != null)
+                await _navSyncCoordinator.WaitForSyncAsync(TimeSpan.FromSeconds(30), HttpContext.RequestAborted);
+
             var result = await _getPortfolio.ExecuteAsync(
                 CurrentUserId,
                 CurrentUserName,
@@ -58,6 +65,9 @@ namespace MutualFund.Investment.API.Controllers
             [FromQuery] string? investorName = null,
             [FromQuery] DateTime? asOfDate = null)
         {
+            if (_navSyncCoordinator != null)
+                await _navSyncCoordinator.WaitForSyncAsync(TimeSpan.FromSeconds(30), HttpContext.RequestAborted);
+
             var result = await _getPortfolio.ExecuteAsync(
                 userId,
                 investorName ?? userId,
@@ -79,6 +89,9 @@ namespace MutualFund.Investment.API.Controllers
         public async Task<IActionResult> GetFamilyPortfolio(
             [FromQuery] DateTime? asOfDate = null)
         {
+            if (_navSyncCoordinator != null)
+                await _navSyncCoordinator.WaitForSyncAsync(TimeSpan.FromSeconds(30), HttpContext.RequestAborted);
+
             var result = await _getFamilyPortfolio.ExecuteAsync(asOfDate);
 
             if (!result.IsSuccess)
@@ -96,6 +109,9 @@ namespace MutualFund.Investment.API.Controllers
         [Authorize(Policy = "CanViewAllPortfolio")]
         public async Task<IActionResult> GetAllHoldings()
         {
+            if (_navSyncCoordinator != null)
+                await _navSyncCoordinator.WaitForSyncAsync(TimeSpan.FromSeconds(30), HttpContext.RequestAborted);
+
             var result = await _getAllHoldings.ExecuteAsync();
 
             if (!result.IsSuccess)

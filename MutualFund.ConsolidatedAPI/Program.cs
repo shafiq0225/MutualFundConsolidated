@@ -60,6 +60,7 @@ builder.Services.AddScoped<MutualFund.ConsolidatedAPI.Modules.Messaging.Services
 builder.Services.AddScoped<MutualFund.ConsolidatedAPI.Modules.Messaging.Tools.MessagingMcpTools>();
 
 // ── Background Workers ─────────────────────────────────────────────
+builder.Services.AddSingleton<MutualFundNav.API.Services.NavSyncCoordinator>();
 builder.Services.AddHostedService<NavDownloadWorker>();
 builder.Services.AddHostedService<MutualFund.ConsolidatedAPI.Modules.Messaging.Workers.DailyDigestWorker>();
 

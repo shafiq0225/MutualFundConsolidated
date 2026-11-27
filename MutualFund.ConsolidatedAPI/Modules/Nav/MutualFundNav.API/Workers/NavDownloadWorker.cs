@@ -1,3 +1,4 @@
+using MutualFundNav.API.Services;
 using MutualFundNav.Application.UseCases.Commands;
 using MutualFundNav.Domain.Contracts;
 using MutualFundNav.Domain.Entities;
@@ -10,15 +11,18 @@ namespace MutualFundNav.API.Workers
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IConfiguration _config;
         private readonly ILogger<NavDownloadWorker> _logger;
+        private readonly NavSyncCoordinator? _navSyncCoordinator;
 
         public NavDownloadWorker(
             IServiceScopeFactory scopeFactory,
             IConfiguration config,
-            ILogger<NavDownloadWorker> logger)
+            ILogger<NavDownloadWorker> logger,
+            NavSyncCoordinator? navSyncCoordinator = null)
         {
             _scopeFactory = scopeFactory;
             _config = config;
             _logger = logger;
+            _navSyncCoordinator = navSyncCoordinator;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -26,7 +30,14 @@ namespace MutualFundNav.API.Workers
             _logger.LogInformation("NavDownloadWorker started");
 
             // ── Feature 1: Missed-run detection on startup ─────────────────
-            await CheckAndRunMissedJobAsync(stoppingToken);
+            try
+            {
+                await CheckAndRunMissedJobAsync(stoppingToken);
+            }
+            finally
+            {
+                _navSyncCoordinator?.MarkStartupSyncCompleted();
+            }
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -109,6 +120,7 @@ namespace MutualFundNav.API.Workers
 
         private async Task RunJobAsync(string jobName, CancellationToken ct)
         {
+            _navSyncCoordinator?.BeginActiveSync();
             var startedAt = DateTime.UtcNow;
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             bool success = false;
@@ -177,6 +189,7 @@ namespace MutualFundNav.API.Workers
             }
             finally
             {
+                _navSyncCoordinator?.EndActiveSync();
                 _logger.LogInformation(
                     "========== {JobName} Completed — Success: {Success}, Elapsed: {Elapsed:F2}s ==========",
                     jobName, success, stopwatch.Elapsed.TotalSeconds);
