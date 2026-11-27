@@ -39,3 +39,16 @@ export function requiresPermission(code: string): CanActivateFn {
     return false;
   };
 }
+
+/** Gates an Admin-only route (e.g. Order Corrections). */
+export const adminOnlyGuard: CanActivateFn = () => {
+  const authCookie = inject(AuthCookieService);
+  const router = inject(Router);
+
+  if (authCookie.isAdmin()) {
+    return true;
+  }
+
+  router.navigate(['/dashboard']);
+  return false;
+};

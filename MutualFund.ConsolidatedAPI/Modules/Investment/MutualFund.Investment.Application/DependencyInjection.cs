@@ -17,10 +17,12 @@ namespace MutualFund.Investment.Application
             // ── Order Commands ─────────────────────────────────────
             services.AddScoped<CreateOrderCommand>();
             services.AddScoped<UpdateOrderStatusCommand>();
+            services.AddScoped<OrderCorrectionService>();
 
             // ── Order Queries ──────────────────────────────────────
             services.AddScoped<GetAllOrdersQuery>();
             services.AddScoped<GetOrderByIdQuery>();
+            services.AddScoped<OrderSanityCheckService>();
 
             // ── Portfolio Commands ─────────────────────────────────
             services.AddScoped<CalculateSnapshotCommand>();
