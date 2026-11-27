@@ -172,3 +172,59 @@ export interface OrderSanityAuditSummaryDto {
   noAmfiDataCount: number;
   items: OrderSanityAuditItemDto[];
 }
+
+export interface BulkImportPreviewRowDto {
+  rowNumber: number;
+  orderDate: string;
+  investorUserId: string;
+  investorName: string;
+  schemeCode: string;
+  schemeName: string;
+  fundName: string;
+  rawSchemeText: string;
+  folioNumber: string;
+  investedAmount: number;
+  purchaseNAV: number;
+  unitsAllotted: number;
+  paymentMode: string;
+  amfiNav?: number | null;
+  amfiNavDate?: string | null;
+  variancePercent?: number | null;
+  status: 'Ready' | 'Warning' | 'Issue' | 'Duplicate' | 'Unmatched' | string;
+  statusNote: string;
+  duplicateOrderNumber?: string | null;
+  includeByDefault: boolean;
+  selected?: boolean;
+}
+
+export interface BulkImportPreviewResponseDto {
+  sourceType: 'Excel' | 'CAS' | string;
+  fileName: string;
+  totalParsed: number;
+  readyCount: number;
+  issueCount: number;
+  duplicateCount: number;
+  unmatchedCount: number;
+  rows: BulkImportPreviewRowDto[];
+}
+
+export interface BulkImportConfirmRowDto {
+  orderDate: string;
+  investorUserId: string;
+  investorName: string;
+  schemeCode: string;
+  schemeName: string;
+  fundName: string;
+  folioNumber: string;
+  investedAmount: number;
+  purchaseNAV: number;
+  unitsAllotted: number;
+  paymentMode: string;
+}
+
+export interface BulkImportConfirmResultDto {
+  ordersCreated: number;
+  holdingsCreated: number;
+  snapshotsRecalculated: number;
+  createdOrderNumbers: string[];
+}

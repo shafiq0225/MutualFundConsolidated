@@ -14,7 +14,7 @@
       <a
         class="nav-item"
         [routerLink]="item.route"
-        routerLinkActive="active"
+        [class.active]="isItemActive(item)"
         [title]="layout.sidebarCollapsed() ? item.label : ''"
         (click)="layout.closeSidebarOnMobile()"
       >

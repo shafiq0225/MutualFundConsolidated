@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
+import { RouterLink, Router, NavigationEnd } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { LayoutStateService } from '../../core/services/layout-state.service';
@@ -25,7 +25,7 @@ interface NavItem {
 @Component({
   selector: 'shell-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterLink],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss'
 })
@@ -58,6 +58,23 @@ export class SidebarComponent {
     ),
     { initialValue: this.visibleNavItems() }
   );
+
+  currentUrl = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      startWith(null),
+      map(() => this.router.url)
+    ),
+    { initialValue: this.router.url }
+  );
+
+  isItemActive(item: NavItem): boolean {
+    const url = (this.currentUrl() || '').split('?')[0];
+    if (item.route === '/orders') {
+      return url === '/orders' || url.startsWith('/orders/') || url.startsWith('/bulk-import');
+    }
+    return url === item.route || url.startsWith(item.route + '/');
+  }
 
   private visibleNavItems(): NavItem[] {
     return this.allNavItems.filter(

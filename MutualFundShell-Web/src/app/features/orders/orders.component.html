@@ -38,7 +38,12 @@
             </div>
           </div>
 
-          <button type="button" class="btn-gold" *ngIf="auth.canAddOrders()" (click)="openNewOrderModal()">+ New order</button>
+          <div *ngIf="auth.canAddOrders()" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <button type="button" class="btn-gold" (click)="openNewOrderModal()">+ New order</button>
+            <button type="button" class="btn-gold" (click)="goToBulkImport()">
+              <i class="fas fa-file-import" style="margin-right: 6px;"></i> Bulk Import (CAS PDF)
+            </button>
+          </div>
         </div>
       </div>
 

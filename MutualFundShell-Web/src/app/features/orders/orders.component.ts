@@ -1,6 +1,7 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { forkJoin } from 'rxjs';
 
@@ -76,9 +77,14 @@ export class OrdersComponent implements OnInit {
     private authFamilyService: AuthFamilyService,
     private authUserService: AuthUserService,
     private fb: FormBuilder,
+    private router: Router,
     private toastr: ToastrService,
     public auth: AuthService
   ) {}
+
+  goToBulkImport(): void {
+    this.router.navigate(['/bulk-import']);
+  }
 
   ngOnInit(): void {
     this.initForm();

@@ -18,6 +18,7 @@ namespace MutualFund.Investment.Application
             services.AddScoped<CreateOrderCommand>();
             services.AddScoped<UpdateOrderStatusCommand>();
             services.AddScoped<OrderCorrectionService>();
+            services.AddScoped<BulkOrderImportService>();
 
             // ── Order Queries ──────────────────────────────────────
             services.AddScoped<GetAllOrdersQuery>();

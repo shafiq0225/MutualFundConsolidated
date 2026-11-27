@@ -14,7 +14,10 @@ import {
   OrderCorrectionLogDto,
   PreOrderSanityCheckRequestDto,
   PreOrderSanityCheckResultDto,
-  OrderSanityAuditSummaryDto
+  OrderSanityAuditSummaryDto,
+  BulkImportPreviewResponseDto,
+  BulkImportConfirmRowDto,
+  BulkImportConfirmResultDto
 } from '../models/order.model';
 
 @Injectable({ providedIn: 'root' })
@@ -67,5 +70,16 @@ export class OrderService {
 
   checkPreOrderSanity(dto: PreOrderSanityCheckRequestDto): Observable<PreOrderSanityCheckResultDto> {
     return this.http.post<PreOrderSanityCheckResultDto>(`${this.api}/sanity-check`, dto);
+  }
+
+  previewBulkCas(file: File, password?: string): Observable<BulkImportPreviewResponseDto> {
+    const fd = new FormData();
+    fd.append('file', file);
+    if (password) fd.append('password', password);
+    return this.http.post<BulkImportPreviewResponseDto>(`${this.api}/bulk-import/preview-cas`, fd);
+  }
+
+  confirmBulkImport(rows: BulkImportConfirmRowDto[], sourceNote?: string): Observable<BulkImportConfirmResultDto> {
+    return this.http.post<BulkImportConfirmResultDto>(`${this.api}/bulk-import/confirm`, { rows, sourceNote });
   }
 }

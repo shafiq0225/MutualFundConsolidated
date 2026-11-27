@@ -1,0 +1,255 @@
+<div class="bulk-page">
+  <div class="back-header">
+    <button class="back-btn" type="button" (click)="goToOrders()" aria-label="Go back to orders">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+    <div class="back-info">
+      <h2>Bulk Import — CAMS / KFintech CAS PDF</h2>
+      <span class="back-sub">
+        Upload your monthly CAMS/KFintech Detailed CAS PDF to automatically extract SIP/purchase transactions and create orders, holdings, and snapshots in bulk.
+      </span>
+    </div>
+  </div>
+
+  <!-- 3-Step Wizard Bar -->
+  <div class="stepper card">
+    <div class="step" [class.active]="step === 1" [class.done]="step > 1">
+      <div class="step-num">1</div>
+      <span>Upload CAS PDF</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step" [class.active]="step === 2" [class.done]="step > 2">
+      <div class="step-num">2</div>
+      <span>Preview, Match &amp; Validate</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step" [class.active]="step === 3">
+      <div class="step-num">3</div>
+      <span>Import Summary</span>
+    </div>
+  </div>
+
+  <!-- STEP 1: UPLOAD -->
+  @if (step === 1) {
+    <div class="card upload-card">
+      <div class="cas-banner">
+        <h3><i class="fas fa-file-pdf pdf-icon"></i> CAMS / KFintech Consolidated Account Statement (.pdf)</h3>
+        <p>Automatically skips Gross &amp; Stamp Duty lines, imports Net Investment amounts, detects investor &amp; schemes, and prevents duplicate imports.</p>
+      </div>
+
+      <div class="field password-field">
+        <label>CAS PDF Password (PAN / Password set on CAMS)</label>
+        <div class="password-wrap">
+          <input
+            [type]="showPassword ? 'text' : 'password'"
+            class="input"
+            [(ngModel)]="casPassword"
+            placeholder="Enter PDF password (if protected)"
+          />
+          <button class="eye-btn" type="button" (click)="showPassword = !showPassword">
+            <i class="fas" [ngClass]="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="dropzone">
+        <i class="fas fa-cloud-arrow-up upload-icon"></i>
+        <div class="drop-title">
+          @if (selectedFile) {
+            Selected: <span class="mono">{{ selectedFile.name }}</span> ({{ (selectedFile.size / 1024) | number:'1.0-0' }} KB)
+          } @else {
+            Choose your CAMS / KFintech CAS (.pdf) file
+          }
+        </div>
+        <div class="drop-sub">
+          Every parsed transaction will be matched against Approved Schemes, checked for duplicates, and verified against AMFI NAVs before saving.
+        </div>
+
+        <div class="drop-actions">
+          <label class="btn btn-outline file-label">
+            <i class="fas fa-folder-open"></i> Browse PDF File
+            <input
+              type="file"
+              accept=".pdf"
+              (change)="onFileSelected($event)"
+              hidden
+            />
+          </label>
+
+          <button class="btn btn-primary" type="button" [disabled]="!selectedFile || parsing" (click)="parseAndPreview()">
+            <i class="fas fa-wand-magic-sparkles"></i>
+            {{ parsing ? 'Parsing CAS PDF...' : 'Parse & Preview Transactions' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- STEP 2: PREVIEW & VALIDATE -->
+  @if (step === 2) {
+    <div class="summary-strip">
+      <div class="sum-box">
+        <div class="lbl">Parsed Rows</div>
+        <div class="val mono">{{ rows.length }}</div>
+      </div>
+      <div class="sum-box ok">
+        <div class="lbl">Ready / Warning</div>
+        <div class="val mono">{{ readyCount }}</div>
+      </div>
+      <div class="sum-box issue">
+        <div class="lbl">NAV Issues / Unmatched</div>
+        <div class="val mono">{{ issueCount }}</div>
+      </div>
+      <div class="sum-box dup">
+        <div class="lbl">Duplicates Skipped</div>
+        <div class="val mono">{{ duplicateCount }}</div>
+      </div>
+      <div class="sum-box total-amt">
+        <div class="lbl">Selected Total Amount</div>
+        <div class="val mono">₹{{ selectedTotalAmount | number:'1.2-2' }}</div>
+      </div>
+    </div>
+
+    <div class="card table-wrap" style="margin-bottom: 16px;">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 36px;">Import</th>
+            <th>Date</th>
+            <th>Investor</th>
+            <th>Scheme (Matched / Select)</th>
+            <th>Folio</th>
+            <th class="right">Amount (₹)</th>
+            <th class="right">NAV (₹)</th>
+            <th class="right">Units</th>
+            <th>Validation Status</th>
+            <th>Quick Fix</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows; track row.rowNumber) {
+            <tr [class.muted-row]="row.status === 'Duplicate'">
+              <td>
+                <input
+                  type="checkbox"
+                  [(ngModel)]="row.selected"
+                  [disabled]="!row.schemeCode || !row.investorUserId"
+                />
+              </td>
+              <td class="mono">{{ formatDate(row.orderDate) }}</td>
+              <td>
+                @if (row.investorUserId) {
+                  {{ row.investorName }}
+                } @else {
+                  <select class="select-sm" [ngModel]="row.investorUserId" (ngModelChange)="onInvestorChanged(row, $event)">
+                    <option value="">-- Select Investor --</option>
+                    @for (inv of investors; track inv.id) {
+                      <option [value]="inv.panNumber || inv.id">{{ inv.fullName || (inv.firstName + ' ' + inv.lastName) }}</option>
+                    }
+                  </select>
+                }
+              </td>
+              <td class="scheme-cell">
+                @if (row.schemeCode) {
+                  <div class="scheme-title">{{ row.schemeName }}</div>
+                } @else {
+                  <div class="raw-hint">{{ row.rawSchemeText || 'Unknown Scheme' }}</div>
+                  <select class="select-sm" [ngModel]="row.schemeCode" (ngModelChange)="onSchemeChanged(row, $event)">
+                    <option value="">-- Map Approved Scheme --</option>
+                    @for (sch of schemes; track sch.schemeCode) {
+                      <option [value]="sch.schemeCode">{{ sch.schemeName }}</option>
+                    }
+                  </select>
+                }
+              </td>
+              <td class="mono">{{ row.folioNumber || '—' }}</td>
+              <td class="mono right">₹{{ row.investedAmount | number:'1.2-2' }}</td>
+              <td class="mono right">{{ row.purchaseNAV | number:'1.4-4' }}</td>
+              <td class="mono right bold">{{ row.unitsAllotted | number:'1.4-4' }}</td>
+              <td>
+                <span
+                  class="pill"
+                  [class.pill-ok]="row.status === 'Ready'"
+                  [class.pill-warn]="row.status === 'Warning'"
+                  [class.pill-err]="row.status === 'Issue' || row.status === 'Unmatched'"
+                  [class.pill-skip]="row.status === 'Duplicate'"
+                >
+                  {{ row.status }}
+                </span>
+                <div class="note-sub">{{ row.statusNote }}</div>
+              </td>
+              <td>
+                @if (row.status === 'Issue' && row.amfiNav) {
+                  <button class="btn btn-outline btn-sm" type="button" (click)="autoFixAmfiNav(row)">
+                    <i class="fas fa-wand-magic-sparkles"></i> Use {{ row.amfiNav | number:'1.2-2' }}
+                  </button>
+                } @else {
+                  <span class="muted">—</span>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="10" class="empty-cell">No transactions parsed from this CAS PDF.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="step2-footer">
+      <button class="btn btn-outline" type="button" (click)="resetWizard()">
+        <i class="fas fa-arrow-left"></i> Back to Upload
+      </button>
+      <button class="btn btn-success" type="button" [disabled]="selectedCount === 0 || importing" (click)="confirmImport()">
+        <i class="fas fa-check-double"></i>
+        {{ importing ? 'Importing...' : ('Import ' + selectedCount + ' Selected Row(s) & Sync Snapshots') }}
+      </button>
+    </div>
+  }
+
+  <!-- STEP 3: IMPORT SUMMARY -->
+  @if (step === 3 && importResult) {
+    <div class="card result-card">
+      <i class="fas fa-circle-check result-icon"></i>
+      <h2>Bulk Import Completed Successfully</h2>
+      <p>All selected orders, linked holdings, and portfolio snapshots have been saved in a single transaction.</p>
+
+      <div class="summary-strip result-strip">
+        <div class="sum-box ok">
+          <div class="lbl">Orders Created</div>
+          <div class="val mono">{{ importResult.ordersCreated }}</div>
+        </div>
+        <div class="sum-box ok">
+          <div class="lbl">Holdings Created</div>
+          <div class="val mono">{{ importResult.holdingsCreated }}</div>
+        </div>
+        <div class="sum-box">
+          <div class="lbl">Snapshots Synced</div>
+          <div class="val mono">{{ importResult.snapshotsRecalculated }}</div>
+        </div>
+        <div class="sum-box dup">
+          <div class="lbl">Skipped / Excluded</div>
+          <div class="val mono">{{ rows.length - importResult.ordersCreated }}</div>
+        </div>
+      </div>
+
+      <div class="created-list mono">
+        Created Orders: {{ importResult.createdOrderNumbers.join(', ') }}
+      </div>
+
+      <div class="result-actions">
+        <button class="btn btn-primary" type="button" (click)="resetWizard()">
+          <i class="fas fa-file-import"></i> Import Another CAS PDF
+        </button>
+        <button class="btn btn-outline" type="button" (click)="goToOrders()">
+          <i class="fas fa-receipt"></i> View Orders
+        </button>
+      </div>
+    </div>
+  }
+</div>
+
+@if (parsing || importing) {
+  <app-loading-spinner [message]="parsing ? 'Parsing & validating CAS PDF...' : 'Creating orders, holdings & snapshots...'" />
+}

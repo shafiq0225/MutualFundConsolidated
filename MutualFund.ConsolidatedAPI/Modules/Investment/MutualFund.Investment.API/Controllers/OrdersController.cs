@@ -17,6 +17,7 @@ namespace MutualFund.Investment.API.Controllers
         private readonly ILogger<OrdersController> _logger;
         private readonly OrderCorrectionService? _correctionService;
         private readonly OrderSanityCheckService? _sanityCheckService;
+        private readonly BulkOrderImportService? _bulkImportService;
 
         public OrdersController(
             CreateOrderCommand createOrder,
@@ -25,7 +26,8 @@ namespace MutualFund.Investment.API.Controllers
             GetOrderByIdQuery getOrderById,
             ILogger<OrdersController> logger,
             OrderCorrectionService? correctionService = null,
-            OrderSanityCheckService? sanityCheckService = null)
+            OrderSanityCheckService? sanityCheckService = null,
+            BulkOrderImportService? bulkImportService = null)
         {
             _createOrder = createOrder;
             _updateStatus = updateStatus;
@@ -34,6 +36,7 @@ namespace MutualFund.Investment.API.Controllers
             _logger = logger;
             _correctionService = correctionService;
             _sanityCheckService = sanityCheckService;
+            _bulkImportService = bulkImportService;
         }
 
         // ── GET /api/orders ────────────────────────────────────────
@@ -283,6 +286,52 @@ namespace MutualFund.Investment.API.Controllers
                 return StatusCode(500, new { error = "OrderSanityCheckService not configured." });
 
             var result = await _sanityCheckService.CheckPreOrderAsync(dto);
+            if (!result.IsSuccess)
+                return BadRequest(new { error = result.ErrorMessage });
+
+            return Ok(result.Data);
+        }
+
+        // ── POST /api/orders/bulk-import/preview-cas ───────────────
+        /// <summary>
+        /// Parse and validate a CAMS/KFintech Detailed CAS PDF before importing.
+        /// </summary>
+        [HttpPost("bulk-import/preview-cas")]
+        [Authorize(Policy = "CanCreateOrder")]
+        public async Task<IActionResult> PreviewBulkCas(
+            IFormFile file,
+            [FromForm] string? password = null)
+        {
+            if (_bulkImportService == null)
+                return StatusCode(500, new { error = "BulkOrderImportService not configured." });
+
+            if (file == null || file.Length == 0)
+                return BadRequest(new { error = "Please upload a non-empty CAS PDF file." });
+
+            using var stream = file.OpenReadStream();
+            var result = await _bulkImportService.PreviewCasPdfAsync(stream, file.FileName, password);
+            if (!result.IsSuccess)
+                return BadRequest(new { error = result.ErrorMessage });
+
+            return Ok(result.Data);
+        }
+
+        // ── POST /api/orders/bulk-import/confirm ───────────────────
+        /// <summary>
+        /// Commit validated bulk import rows as Active orders, Holdings, and Snapshots.
+        /// </summary>
+        [HttpPost("bulk-import/confirm")]
+        [Authorize(Policy = "CanCreateOrder")]
+        public async Task<IActionResult> ConfirmBulkImport(
+            [FromBody] BulkImportConfirmRequestDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (_bulkImportService == null)
+                return StatusCode(500, new { error = "BulkOrderImportService not configured." });
+
+            var result = await _bulkImportService.ConfirmImportAsync(dto, CurrentUserId);
             if (!result.IsSuccess)
                 return BadRequest(new { error = result.ErrorMessage });
 
