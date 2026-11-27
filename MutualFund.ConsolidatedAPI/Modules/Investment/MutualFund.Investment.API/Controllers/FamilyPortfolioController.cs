@@ -1,6 +1,7 @@
 using MutualFund.Investment.Application.Family.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MutualFundNav.API.Services;
 
 namespace MutualFund.Investment.API.Controllers
 {
@@ -11,13 +12,16 @@ namespace MutualFund.Investment.API.Controllers
     {
         private readonly FamilyPortfolioQuery _query;
         private readonly ILogger<FamilyPortfolioController> _logger;
+        private readonly NavSyncCoordinator? _navSyncCoordinator;
 
         public FamilyPortfolioController(
             FamilyPortfolioQuery query,
-            ILogger<FamilyPortfolioController> logger)
+            ILogger<FamilyPortfolioController> logger,
+            NavSyncCoordinator? navSyncCoordinator = null)
         {
             _query = query;
             _logger = logger;
+            _navSyncCoordinator = navSyncCoordinator;
         }
 
         /// <summary>
@@ -28,6 +32,9 @@ namespace MutualFund.Investment.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetFamilyOverview()
         {
+            if (_navSyncCoordinator != null)
+                await _navSyncCoordinator.WaitForSyncAsync(TimeSpan.FromSeconds(30), HttpContext.RequestAborted);
+
             var result = await _query.GetFamilyOverviewAsync();
 
             if (!result.IsSuccess)
@@ -47,6 +54,9 @@ namespace MutualFund.Investment.API.Controllers
             // Non-admin can only see own holdings
             if (!CanViewAllPortfolioData && userId != CurrentUserId)
                 return Forbid();
+
+            if (_navSyncCoordinator != null)
+                await _navSyncCoordinator.WaitForSyncAsync(TimeSpan.FromSeconds(30), HttpContext.RequestAborted);
 
             var result = await _query.GetMemberHoldingsAsync(userId);
 
@@ -68,6 +78,9 @@ namespace MutualFund.Investment.API.Controllers
         {
             if (!CanViewAllPortfolioData && userId != CurrentUserId)
                 return Forbid();
+
+            if (_navSyncCoordinator != null)
+                await _navSyncCoordinator.WaitForSyncAsync(TimeSpan.FromSeconds(30), HttpContext.RequestAborted);
 
             var result = await _query
                 .GetSchemeDetailAsync(userId, schemeCode);

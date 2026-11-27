@@ -2,6 +2,7 @@ using MutualFund.ConsolidatedAPI.Modules.Messaging.Tools;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using MutualFundNav.API.Services;
 using MutualFundNav.Domain.Interfaces;
 using MutualFundNav.Domain.Entities;
 
@@ -11,13 +12,16 @@ namespace MutualFund.ConsolidatedAPI.Modules.Messaging.Workers
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<DailyDigestWorker> _logger;
+        private readonly NavSyncCoordinator? _navSyncCoordinator;
 
         public DailyDigestWorker(
             IServiceScopeFactory scopeFactory,
-            ILogger<DailyDigestWorker> logger)
+            ILogger<DailyDigestWorker> logger,
+            NavSyncCoordinator? navSyncCoordinator = null)
         {
             _scopeFactory = scopeFactory;
             _logger = logger;
+            _navSyncCoordinator = navSyncCoordinator;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -28,6 +32,13 @@ namespace MutualFund.ConsolidatedAPI.Modules.Messaging.Workers
             {
                 try
                 {
+                    // Wait for NavDownloadWorker startup sync / any active NAV sync to finish
+                    // so the digest always includes the latest NAV & snapshot data.
+                    if (_navSyncCoordinator != null)
+                    {
+                        await _navSyncCoordinator.WaitForSyncAsync(TimeSpan.FromMinutes(2), stoppingToken);
+                    }
+
                     var istZone = GetIstTimeZone();
                     var istNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, istZone);
                     var todayTargetTime = istNow.Date.AddHours(5).AddMinutes(5); // 05:05 AM IST
@@ -74,6 +85,11 @@ namespace MutualFund.ConsolidatedAPI.Modules.Messaging.Workers
                     // Execute when timer wakes up
                     if (!stoppingToken.IsCancellationRequested)
                     {
+                        if (_navSyncCoordinator != null)
+                        {
+                            await _navSyncCoordinator.WaitForSyncAsync(TimeSpan.FromMinutes(2), stoppingToken);
+                        }
+
                         var currentIst = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, istZone);
                         bool ranOnWakeup = false;
                         try
