@@ -38,10 +38,13 @@
             </div>
           </div>
 
-          <div *ngIf="auth.canAddOrders()" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-            <button type="button" class="btn-gold" (click)="openNewOrderModal()">+ New order</button>
-            <button type="button" class="btn-gold" (click)="goToBulkImport()">
+          <div *ngIf="auth.canAddOrders() || auth.isAdmin()" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <button *ngIf="auth.canAddOrders()" type="button" class="btn-gold" (click)="openNewOrderModal()">+ New order</button>
+            <button *ngIf="auth.canAddOrders()" type="button" class="btn-gold" (click)="goToBulkImport()">
               <i class="fas fa-file-import" style="margin-right: 6px;"></i> Bulk Import (CAS PDF)
+            </button>
+            <button *ngIf="auth.isAdmin()" type="button" class="btn-gold" (click)="goToOrderCorrections()">
+              <i class="fas fa-wrench" style="margin-right: 6px;"></i> Order Corrections
             </button>
           </div>
         </div>

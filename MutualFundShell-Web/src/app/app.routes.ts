@@ -16,6 +16,7 @@ import { OrderCorrectionsComponent } from './features/order-corrections/order-co
 import { OrderSanityCheckComponent } from './features/order-sanity-check/order-sanity-check.component';
 import { BulkImportComponent } from './features/bulk-import/bulk-import.component';
 import { InvestorComponent } from './features/investor/investor.component';
+import { AnalyticsComponent } from './features/analytics/analytics.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 
 export const routes: Routes = [
@@ -36,6 +37,7 @@ export const routes: Routes = [
   { path: 'order-sanity-check', component: OrderSanityCheckComponent, title: 'Sanity Check', canActivate: [authGuard, requiresPermission('order.view')] },
   { path: 'bulk-import', component: BulkImportComponent, title: 'Bulk Import', canActivate: [authGuard, requiresPermission('order.add')] },
   { path: 'portfolio', component: InvestorComponent, title: 'Portfolio', canActivate: [authGuard, requiresPermission('investor.view')] },
+  { path: 'analytics', component: AnalyticsComponent, title: 'Analytics', canActivate: [authGuard, requiresPermission('investor.view')] },
 
   { path: 'dashboard', component: DashboardComponent, title: 'Dashboard', canActivate: [authGuard] },
 

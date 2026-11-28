@@ -1,4 +1,5 @@
-﻿using MutualFund.Investment.Application.Family.Queries;
+﻿using MutualFund.Investment.Application.Analytics.Queries;
+using MutualFund.Investment.Application.Family.Queries;
 using MutualFund.Investment.Application.Orders.Commands;
 using MutualFund.Investment.Application.Orders.Queries;
 using MutualFund.Investment.Application.Portfolio.Commands;
@@ -42,6 +43,7 @@ namespace MutualFund.Investment.Application
 
 
             services.AddScoped<FamilyPortfolioQuery>();
+            services.AddScoped<PortfolioAnalyticsQuery>();
 
             return services;
         }

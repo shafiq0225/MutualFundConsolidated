@@ -1,0 +1,781 @@
+<app-loading-spinner *ngIf="loading" message="Computing portfolio analytics..."></app-loading-spinner>
+
+<div *ngIf="!loading && data" class="analytics-page">
+  <!-- ══ Hero Header ══════════════════════════════════════════════════ -->
+  <div class="hero-card">
+    <div class="hero-top">
+      <div>
+        <div class="eyebrow">Executive Portfolio BI Analytics</div>
+        <h1>Analytics &amp; Insights</h1>
+      </div>
+
+      <div class="hero-controls">
+        <select
+          *ngIf="canSwitchInvestor"
+          class="investor-select"
+          [(ngModel)]="selectedInvestorId"
+          (ngModelChange)="onInvestorChange()"
+          aria-label="Filter by investor"
+        >
+          <option value="family">All Family Members</option>
+          <option *ngFor="let inv of investors" [value]="inv.id">
+            {{ inv.fullName || (inv.firstName + ' ' + inv.lastName) }}
+          </option>
+        </select>
+
+        <div class="tab-bar" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            [class.active]="activeTab === 'stepup'"
+            (click)="setTab('stepup')"
+          >SIP Step-Up</button>
+          <button
+            type="button"
+            role="tab"
+            [class.active]="activeTab === 'year'"
+            (click)="setTab('year')"
+          >Year-Wise</button>
+          <button
+            type="button"
+            role="tab"
+            [class.active]="activeTab === 'month'"
+            (click)="setTab('month')"
+          >Month Ledger</button>
+          <button
+            type="button"
+            role="tab"
+            [class.active]="activeTab === 'h2h'"
+            (click)="setTab('h2h')"
+          >Head-to-Head</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overall Portfolio KPI Strip -->
+    <div class="hero-kpis">
+      <div class="hkpi">
+        <div class="hkpi-lbl">Total Invested</div>
+        <div class="hkpi-val mono">₹{{ data.totalInvested | number:'1.2-2' }}</div>
+      </div>
+      <div class="hkpi">
+        <div class="hkpi-lbl">Market Value</div>
+        <div class="hkpi-val mono">₹{{ data.totalMarketValue | number:'1.2-2' }}</div>
+      </div>
+      <div class="hkpi">
+        <div class="hkpi-lbl">Total Profit / Loss</div>
+        <div class="hkpi-val mono" [class.pos]="data.totalProfitLoss >= 0" [class.neg]="data.totalProfitLoss < 0">
+          {{ data.totalProfitLoss >= 0 ? '+' : '' }}₹{{ data.totalProfitLoss | number:'1.2-2' }}
+        </div>
+      </div>
+      <div class="hkpi">
+        <div class="hkpi-lbl">Overall Return</div>
+        <div class="hkpi-val mono" [class.pos]="data.overallReturnPercent >= 0" [class.neg]="data.overallReturnPercent < 0">
+          {{ data.overallReturnPercent >= 0 ? '+' : '' }}{{ data.overallReturnPercent | number:'1.2-2' }}%
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Empty State ══════════════════════════════════════════════════ -->
+  <div *ngIf="data.years.length === 0 && data.headToHead.schemes.length === 0" class="card empty-state">
+    <i class="fas fa-chart-pie"></i>
+    <h3>No Active Orders or Holdings Found</h3>
+    <p>Place an order or import a CAS PDF to populate your Analytics &amp; Insights tables.</p>
+  </div>
+
+  <!-- ══ TAB 1: SIP STEP-UP ANALYSIS ══════════════════════════════════ -->
+  <section *ngIf="activeTab === 'stepup' && data.years.length > 0" class="tab-section">
+    <div class="section-toolbar">
+      <div class="kpi-strip">
+        <div class="kpi-box">
+          <div class="lbl">Avg Monthly SIP ({{ data.sipStepUp.firstYear }})</div>
+          <div class="val mono">₹{{ (data.sipStepUp.totals.avgMonthlyByYear[data.sipStepUp.firstYear] || 0) | number:'1.0-0' }}</div>
+        </div>
+        <div class="kpi-box gold">
+          <div class="lbl">Avg Monthly SIP ({{ data.sipStepUp.currentYear }})</div>
+          <div class="val mono">₹{{ (data.sipStepUp.totals.avgMonthlyByYear[data.sipStepUp.currentYear] || 0) | number:'1.0-0' }}</div>
+        </div>
+        <div class="kpi-box gain">
+          <div class="lbl">Step-Up ({{ stepUpCompareLabel }})</div>
+          <div class="val mono">
+            {{ data.sipStepUp.totals.prevToCurrStepUpPercent >= 0 ? '+' : '' }}{{ data.sipStepUp.totals.prevToCurrStepUpPercent | number:'1.2-2' }}%
+          </div>
+        </div>
+        <div class="kpi-box">
+          <div class="lbl">{{ data.sipStepUp.currentYear }} Annualised Run-Rate</div>
+          <div class="val mono">₹{{ data.sipStepUp.totals.annualisedRunRate | number:'1.0-0' }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table 1: Annual Investment Totals -->
+    <div class="card table-card desktop-only">
+      <div class="card-head">
+        <h3>Table 1 — Annual Investment Totals by Scheme (Calendar Year: Jan–Dec)</h3>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Scheme Name</th>
+              <th *ngFor="let yr of data.sipStepUp.years" class="right">
+                {{ yr }} ({{ getYearMonths(yr) === 12 ? 'Jan–Dec' : getYearMonths(yr) + ' mo' }})
+              </th>
+              <th class="right">Grand Total</th>
+              <th class="right">Avg SIP {{ data.sipStepUp.firstYear }}</th>
+              <th class="right">Avg SIP {{ data.sipStepUp.currentYear }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of data.sipStepUp.rows">
+              <td class="scheme-col">{{ r.schemeName }}</td>
+              <td *ngFor="let yr of data.sipStepUp.years" class="right mono">
+                ₹{{ (r.yearlyTotals[yr] || 0) | number:'1.2-2' }}
+              </td>
+              <td class="right mono bold">₹{{ r.grandTotal | number:'1.2-2' }}</td>
+              <td class="right mono">₹{{ (r.avgMonthlyByYear[data.sipStepUp.firstYear] || 0) | number:'1.2-2' }}</td>
+              <td class="right mono">₹{{ (r.avgMonthlyByYear[data.sipStepUp.currentYear] || 0) | number:'1.2-2' }}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td>{{ data.sipStepUp.totals.schemeName }}</td>
+              <td *ngFor="let yr of data.sipStepUp.years" class="right mono">
+                ₹{{ (data.sipStepUp.totals.yearlyTotals[yr] || 0) | number:'1.2-2' }}
+              </td>
+              <td class="right mono">₹{{ data.sipStepUp.totals.grandTotal | number:'1.2-2' }}</td>
+              <td class="right mono">₹{{ (data.sipStepUp.totals.avgMonthlyByYear[data.sipStepUp.firstYear] || 0) | number:'1.2-2' }}</td>
+              <td class="right mono">₹{{ (data.sipStepUp.totals.avgMonthlyByYear[data.sipStepUp.currentYear] || 0) | number:'1.2-2' }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Table 2: YoY Step-Up Comparison -->
+    <div class="card table-card desktop-only">
+      <div class="card-head">
+        <h3>Table 2 — Year-on-Year SIP Step-Up Comparison</h3>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Scheme Name</th>
+              <th class="right">Step-Up {{ stepUpCompareLabel }} (₹)</th>
+              <th class="right">Step-Up {{ stepUpCompareLabel }} (%)</th>
+              <th class="right">Invested {{ data.sipStepUp.currentYear }}</th>
+              <th class="right">Step-Up {{ data.sipStepUp.prevYear }} vs {{ data.sipStepUp.currentYear }} % (Annualised)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of data.sipStepUp.rows">
+              <td class="scheme-col">{{ r.schemeName }}</td>
+              <td class="right mono" [class.pos]="r.prevToCurrStepUpRs > 0" [class.neg]="r.prevToCurrStepUpRs < 0">
+                {{ r.prevToCurrStepUpRs >= 0 ? '+' : '' }}₹{{ r.prevToCurrStepUpRs | number:'1.2-2' }}
+              </td>
+              <td class="right mono" [class.pos]="r.prevToCurrStepUpPercent > 0" [class.neg]="r.prevToCurrStepUpPercent < 0">
+                {{ r.prevToCurrStepUpPercent >= 0 ? '+' : '' }}{{ r.prevToCurrStepUpPercent | number:'1.2-2' }}%
+              </td>
+              <td class="right mono">₹{{ (r.yearlyTotals[data.sipStepUp.currentYear] || 0) | number:'1.2-2' }}</td>
+              <td class="right mono" [class.pos]="r.currVsPrevAnnualisedPercent > 0" [class.neg]="r.currVsPrevAnnualisedPercent < 0">
+                {{ r.currVsPrevAnnualisedPercent >= 0 ? '+' : '' }}{{ r.currVsPrevAnnualisedPercent | number:'1.2-2' }}%
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td>{{ data.sipStepUp.totals.schemeName }}</td>
+              <td class="right mono">{{ data.sipStepUp.totals.prevToCurrStepUpRs >= 0 ? '+' : '' }}₹{{ data.sipStepUp.totals.prevToCurrStepUpRs | number:'1.2-2' }}</td>
+              <td class="right mono">{{ data.sipStepUp.totals.prevToCurrStepUpPercent >= 0 ? '+' : '' }}{{ data.sipStepUp.totals.prevToCurrStepUpPercent | number:'1.2-2' }}%</td>
+              <td class="right mono">₹{{ (data.sipStepUp.totals.yearlyTotals[data.sipStepUp.currentYear] || 0) | number:'1.2-2' }}</td>
+              <td class="right mono">{{ data.sipStepUp.totals.currVsPrevAnnualisedPercent >= 0 ? '+' : '' }}{{ data.sipStepUp.totals.currVsPrevAnnualisedPercent | number:'1.2-2' }}%</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Table 3: Monthly Avg Run-Rate & Annualised Projection -->
+    <div class="card table-card desktop-only">
+      <div class="card-head">
+        <h3>Table 3 — Monthly Average SIP Run-Rate &amp; Annualised Projection</h3>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Scheme Name</th>
+              <th class="right">Avg Monthly ({{ data.sipStepUp.firstYear }})</th>
+              <th class="right">Monthly Increment (₹)</th>
+              <th class="right">Increment %</th>
+              <th class="right">Avg Monthly ({{ data.sipStepUp.currentYear }})</th>
+              <th class="right">Annualised Run-Rate ({{ data.sipStepUp.currentYear }})</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of data.sipStepUp.rows">
+              <td class="scheme-col">{{ r.schemeName }}</td>
+              <td class="right mono">₹{{ (r.avgMonthlyByYear[data.sipStepUp.firstYear] || 0) | number:'1.2-2' }}</td>
+              <td class="right mono" [class.pos]="r.monthlyIncrementRs > 0" [class.neg]="r.monthlyIncrementRs < 0">
+                {{ r.monthlyIncrementRs >= 0 ? '+' : '' }}₹{{ r.monthlyIncrementRs | number:'1.2-2' }}
+              </td>
+              <td class="right mono" [class.pos]="r.monthlyIncrementPercent > 0" [class.neg]="r.monthlyIncrementPercent < 0">
+                {{ r.monthlyIncrementPercent >= 0 ? '+' : '' }}{{ r.monthlyIncrementPercent | number:'1.2-2' }}%
+              </td>
+              <td class="right mono">₹{{ (r.avgMonthlyByYear[data.sipStepUp.currentYear] || 0) | number:'1.2-2' }}</td>
+              <td class="right mono bold">₹{{ r.annualisedRunRate | number:'1.2-2' }}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td>{{ data.sipStepUp.totals.schemeName }}</td>
+              <td class="right mono">₹{{ (data.sipStepUp.totals.avgMonthlyByYear[data.sipStepUp.firstYear] || 0) | number:'1.2-2' }}</td>
+              <td class="right mono">{{ data.sipStepUp.totals.monthlyIncrementRs >= 0 ? '+' : '' }}₹{{ data.sipStepUp.totals.monthlyIncrementRs | number:'1.2-2' }}</td>
+              <td class="right mono">{{ data.sipStepUp.totals.monthlyIncrementPercent >= 0 ? '+' : '' }}{{ data.sipStepUp.totals.monthlyIncrementPercent | number:'1.2-2' }}%</td>
+              <td class="right mono">₹{{ (data.sipStepUp.totals.avgMonthlyByYear[data.sipStepUp.currentYear] || 0) | number:'1.2-2' }}</td>
+              <td class="right mono">₹{{ data.sipStepUp.totals.annualisedRunRate | number:'1.2-2' }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Mobile Cards: SIP Step-Up -->
+    <div class="mobile-only m-cards">
+      <div class="m-card" *ngFor="let r of data.sipStepUp.rows">
+        <div class="m-card-head">
+          <div class="m-title">{{ r.schemeName }}</div>
+          <div class="m-badge-val mono">₹{{ r.grandTotal | number:'1.0-0' }}</div>
+        </div>
+        <div class="m-grid">
+          <div class="m-kv" *ngFor="let yr of data.sipStepUp.years">
+            <span>{{ yr }} ({{ getYearMonths(yr) === 12 ? 'Jan–Dec' : getYearMonths(yr) + ' mo' }})</span>
+            <strong class="mono">₹{{ (r.yearlyTotals[yr] || 0) | number:'1.0-0' }}</strong>
+          </div>
+          <div class="m-kv">
+            <span>Step-Up {{ stepUpCompareLabel }}</span>
+            <strong class="mono" [class.pos]="r.prevToCurrStepUpPercent > 0" [class.neg]="r.prevToCurrStepUpPercent < 0">
+              {{ r.prevToCurrStepUpPercent >= 0 ? '+' : '' }}{{ r.prevToCurrStepUpPercent | number:'1.1-1' }}% ({{ r.prevToCurrStepUpRs >= 0 ? '+' : '' }}₹{{ r.prevToCurrStepUpRs | number:'1.0-0' }})
+            </strong>
+          </div>
+          <div class="m-kv">
+            <span>Avg SIP ({{ data.sipStepUp.currentYear }})</span>
+            <strong class="mono">₹{{ (r.avgMonthlyByYear[data.sipStepUp.currentYear] || 0) | number:'1.0-0' }}/mo</strong>
+          </div>
+          <div class="m-kv">
+            <span>Annualised Run-Rate</span>
+            <strong class="mono">₹{{ r.annualisedRunRate | number:'1.0-0' }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="m-card m-total">
+        <div class="m-card-head">
+          <div class="m-title">{{ data.sipStepUp.totals.schemeName }}</div>
+          <div class="m-badge-val mono">₹{{ data.sipStepUp.totals.grandTotal | number:'1.0-0' }}</div>
+        </div>
+        <div class="m-grid">
+          <div class="m-kv" *ngFor="let yr of data.sipStepUp.years">
+            <span>{{ yr }}</span>
+            <strong class="mono">₹{{ (data.sipStepUp.totals.yearlyTotals[yr] || 0) | number:'1.0-0' }}</strong>
+          </div>
+          <div class="m-kv">
+            <span>Step-Up {{ stepUpCompareLabel }}</span>
+            <strong class="mono" [class.pos]="data.sipStepUp.totals.prevToCurrStepUpPercent > 0">
+              {{ data.sipStepUp.totals.prevToCurrStepUpPercent >= 0 ? '+' : '' }}{{ data.sipStepUp.totals.prevToCurrStepUpPercent | number:'1.1-1' }}%
+            </strong>
+          </div>
+          <div class="m-kv">
+            <span>Annualised Run-Rate</span>
+            <strong class="mono">₹{{ data.sipStepUp.totals.annualisedRunRate | number:'1.0-0' }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ TAB 2: YEAR-WISE ANALYTICS ═══════════════════════════════════ -->
+  <section *ngIf="activeTab === 'year' && data.years.length > 0" class="tab-section">
+    <div class="section-toolbar">
+      <div class="pill-group">
+        <span class="lbl-inline">Breakdown Year:</span>
+        <button
+          *ngFor="let yr of data.years"
+          type="button"
+          class="yr-pill"
+          [class.active]="selectedYearForBreakdown === yr"
+          (click)="selectedYearForBreakdown = yr"
+        >{{ yr }}</button>
+        <button
+          type="button"
+          class="yr-pill"
+          [class.active]="selectedYearForBreakdown === 'all'"
+          (click)="selectedYearForBreakdown = 'all'"
+        >All Years</button>
+      </div>
+
+    </div>
+
+    <div class="card table-card desktop-only">
+      <div class="card-head">
+        <h3>Summary Table 1 — Annual Portfolio Investment Summary</h3>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Calendar Year</th>
+              <th class="right">Invested Amount</th>
+              <th class="right">Share of Total %</th>
+              <th class="right">Cumulative Invested</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let r of data.yearWise.summary"
+              class="clickable-row"
+              (click)="selectedYearForBreakdown = r.year"
+            >
+              <td class="bold">Year {{ r.year }}</td>
+              <td class="right mono">₹{{ r.investedAmount | number:'1.2-2' }}</td>
+              <td class="right mono">{{ r.shareOfTotalPercent | number:'1.2-2' }}%</td>
+              <td class="right mono bold">₹{{ r.cumulativeInvested | number:'1.2-2' }}</td>
+              <td>
+                <span class="status-pill" [class.done]="r.status === 'Completed'" [class.progress]="r.status !== 'Completed'">
+                  {{ r.status }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td>TOTAL PORTFOLIO</td>
+              <td class="right mono">₹{{ data.sipStepUp.totals.grandTotal | number:'1.2-2' }}</td>
+              <td class="right mono">100.00%</td>
+              <td class="right mono">₹{{ data.sipStepUp.totals.grandTotal | number:'1.2-2' }}</td>
+              <td>All Years</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div *ngFor="let b of filteredYearBreakdowns" class="card table-card desktop-only">
+      <div class="card-head">
+        <h3>Calendar Year {{ b.year }} — Detailed Scheme Investment Breakdown ({{ b.monthsElapsed }} mo)</h3>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 56px;">S.No</th>
+              <th>Scheme Name</th>
+              <th class="right">Invested in {{ b.year }}</th>
+              <th class="right">Share of Year %</th>
+              <th class="right">Avg Monthly SIP</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let s of b.schemes; let i = index">
+              <td class="mono muted">{{ i + 1 }}</td>
+              <td class="scheme-col">{{ s.schemeName }}</td>
+              <td class="right mono">₹{{ s.investedAmount | number:'1.2-2' }}</td>
+              <td class="right mono">{{ s.shareOfYearPercent | number:'1.2-2' }}%</td>
+              <td class="right mono">₹{{ s.avgMonthlySip | number:'1.2-2' }}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td>—</td>
+              <td>Total Year {{ b.year }}</td>
+              <td class="right mono">₹{{ b.totalInvested | number:'1.2-2' }}</td>
+              <td class="right mono">100.00%</td>
+              <td class="right mono">₹{{ b.avgMonthlySip | number:'1.2-2' }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Mobile Cards: Year-Wise -->
+    <div class="mobile-only m-cards">
+      <div
+        class="m-card clickable-row"
+        *ngFor="let r of data.yearWise.summary"
+        (click)="selectedYearForBreakdown = r.year"
+      >
+        <div class="m-card-head">
+          <div>
+            <div class="m-title">Year {{ r.year }}</div>
+            <div class="m-sub">Share: {{ r.shareOfTotalPercent | number:'1.2-2' }}%</div>
+          </div>
+          <span class="status-pill" [class.done]="r.status === 'Completed'" [class.progress]="r.status !== 'Completed'">
+            {{ r.status }}
+          </span>
+        </div>
+        <div class="m-grid">
+          <div class="m-kv">
+            <span>Invested</span>
+            <strong class="mono">₹{{ r.investedAmount | number:'1.2-2' }}</strong>
+          </div>
+          <div class="m-kv">
+            <span>Cumulative</span>
+            <strong class="mono">₹{{ r.cumulativeInvested | number:'1.2-2' }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div *ngFor="let b of filteredYearBreakdowns" class="m-cards">
+        <div class="m-card m-total">
+          <div class="m-card-head">
+            <div class="m-title">Year {{ b.year }} Breakdown ({{ b.monthsElapsed }} mo)</div>
+            <div class="m-badge-val mono">₹{{ b.totalInvested | number:'1.0-0' }}</div>
+          </div>
+          <div class="m-sub">Avg Monthly SIP: ₹{{ b.avgMonthlySip | number:'1.2-2' }}</div>
+        </div>
+        <div class="m-card" *ngFor="let s of b.schemes">
+          <div class="m-card-head">
+            <div class="m-title">{{ s.schemeName }}</div>
+            <div class="m-badge-val mono">₹{{ s.investedAmount | number:'1.0-0' }}</div>
+          </div>
+          <div class="m-grid">
+            <div class="m-kv">
+              <span>Share of {{ b.year }}</span>
+              <strong class="mono">{{ s.shareOfYearPercent | number:'1.2-2' }}%</strong>
+            </div>
+            <div class="m-kv">
+              <span>Avg Monthly SIP</span>
+              <strong class="mono">₹{{ s.avgMonthlySip | number:'1.2-2' }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ TAB 3: MONTHLY-WISE LEDGER MATRIX ═══════════════════════════ -->
+  <section *ngIf="activeTab === 'month' && activeLedgerYear as ledger" class="tab-section">
+    <div class="section-toolbar">
+      <div class="pill-group">
+        <span class="lbl-inline">Calendar Year:</span>
+        <button
+          *ngFor="let yr of data.years.slice().reverse()"
+          type="button"
+          class="yr-pill"
+          [class.active]="selectedLedgerYear === yr"
+          (click)="selectedLedgerYear = yr"
+        >{{ yr }}</button>
+        <span class="hint-text">Click any non-zero month amount to view orders</span>
+      </div>
+
+    </div>
+
+    <div class="card table-card desktop-only">
+      <div class="card-head">
+        <h3>Calendar Year {{ ledger.year }} — Scheme Monthly Debit Breakdown</h3>
+      </div>
+      <div class="table-wrap">
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th class="sticky-col">Scheme Name</th>
+              <th *ngFor="let m of monthLabels" class="right">{{ m }}</th>
+              <th class="right">Year Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of ledger.schemes">
+              <td class="sticky-col scheme-col">{{ r.schemeName }}</td>
+              <td *ngFor="let amt of r.months; let mi = index" class="right mono">
+                <button
+                  *ngIf="amt > 0"
+                  type="button"
+                  class="cell-btn"
+                  [title]="r.orderCounts[mi] + ' order(s) — click to inspect'"
+                  (click)="openMonthOrders(ledger.year, mi, r.schemeCode, r.schemeName)"
+                >
+                  ₹{{ amt | number:'1.0-0' }}
+                </button>
+                <span *ngIf="amt === 0" class="muted">—</span>
+              </td>
+              <td class="right mono bold">₹{{ r.yearTotal | number:'1.2-2' }}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td class="sticky-col">Monthly Total {{ ledger.year }}</td>
+              <td *ngFor="let mt of ledger.monthlyTotals" class="right mono">
+                <ng-container *ngIf="mt > 0">₹{{ mt | number:'1.0-0' }}</ng-container>
+                <ng-container *ngIf="mt === 0">—</ng-container>
+              </td>
+              <td class="right mono">₹{{ ledger.yearTotal | number:'1.2-2' }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Mobile Cards: Month Ledger -->
+    <div class="mobile-only m-cards">
+      <div class="m-card" *ngFor="let r of ledger.schemes">
+        <div class="m-card-head">
+          <div class="m-title">{{ r.schemeName }}</div>
+          <div class="m-badge-val mono">₹{{ r.yearTotal | number:'1.0-0' }}</div>
+        </div>
+        <div class="m-month-grid">
+          <div
+            *ngFor="let amt of r.months; let mi = index"
+            class="m-month-cell"
+            [class.has-val]="amt > 0"
+            (click)="amt > 0 ? openMonthOrders(ledger.year, mi, r.schemeCode, r.schemeName) : null"
+          >
+            <span class="ml">{{ monthLabels[mi] }}</span>
+            <span class="mv mono">{{ amt > 0 ? ('₹' + (amt | number:'1.0-0')) : '—' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="m-card m-total">
+        <div class="m-card-head">
+          <div class="m-title">Monthly Total {{ ledger.year }}</div>
+          <div class="m-badge-val mono">₹{{ ledger.yearTotal | number:'1.0-0' }}</div>
+        </div>
+        <div class="m-month-grid">
+          <div *ngFor="let mt of ledger.monthlyTotals; let mi = index" class="m-month-cell" [class.has-val]="mt > 0">
+            <span class="ml">{{ monthLabels[mi] }}</span>
+            <span class="mv mono">{{ mt > 0 ? ('₹' + (mt | number:'1.0-0')) : '—' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ TAB 4: HEAD-TO-HEAD COMPARISON ═══════════════════════════════ -->
+  <section *ngIf="activeTab === 'h2h'" class="tab-section">
+    <div class="section-toolbar">
+      <div class="hint-text">Compares all active holdings across Invested Capital, Market Value, Return %, Weight %, and Profit Share %.</div>
+
+    </div>
+
+    <!-- Table 1: Scheme-by-Scheme -->
+    <div class="card table-card desktop-only">
+      <div class="card-head">
+        <h3>Table 1 — Scheme-by-Scheme Head-to-Head BI Comparison</h3>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 52px;">S.No</th>
+              <th>Scheme Name</th>
+              <th>Asset Category</th>
+              <th class="right">Invested Capital</th>
+              <th class="right">Market Value</th>
+              <th class="right">Profit / Loss</th>
+              <th class="right">Return %</th>
+              <th class="right">Weight %</th>
+              <th class="right">Valuation %</th>
+              <th class="right">Profit Share %</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let s of data.headToHead.schemes; let i = index">
+              <td class="mono muted">{{ i + 1 }}</td>
+              <td class="scheme-col">{{ s.schemeName }}</td>
+              <td class="muted">{{ s.assetCategory }}</td>
+              <td class="right mono">₹{{ s.investedCapital | number:'1.2-2' }}</td>
+              <td class="right mono">₹{{ s.marketValue | number:'1.2-2' }}</td>
+              <td class="right mono" [class.pos]="s.profitLoss >= 0" [class.neg]="s.profitLoss < 0">
+                {{ s.profitLoss >= 0 ? '+' : '' }}₹{{ s.profitLoss | number:'1.2-2' }}
+              </td>
+              <td class="right mono bold" [class.pos]="s.returnPercent >= 0" [class.neg]="s.returnPercent < 0">
+                {{ s.returnPercent >= 0 ? '+' : '' }}{{ s.returnPercent | number:'1.2-2' }}%
+              </td>
+              <td class="right mono">{{ s.portfolioWeightPercent | number:'1.2-2' }}%</td>
+              <td class="right mono">{{ s.valuationSharePercent | number:'1.2-2' }}%</td>
+              <td class="right mono" [class.pos]="s.profitSharePercent >= 0" [class.neg]="s.profitSharePercent < 0">
+                {{ s.profitSharePercent | number:'1.2-2' }}%
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td>—</td>
+              <td>Total Portfolio</td>
+              <td>ALL ASSET CLASSES</td>
+              <td class="right mono">₹{{ data.totalInvested | number:'1.2-2' }}</td>
+              <td class="right mono">₹{{ data.totalMarketValue | number:'1.2-2' }}</td>
+              <td class="right mono">{{ data.totalProfitLoss >= 0 ? '+' : '' }}₹{{ data.totalProfitLoss | number:'1.2-2' }}</td>
+              <td class="right mono">{{ data.overallReturnPercent >= 0 ? '+' : '' }}{{ data.overallReturnPercent | number:'1.2-2' }}%</td>
+              <td class="right mono">100.00%</td>
+              <td class="right mono">100.00%</td>
+              <td class="right mono">100.00%</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Table 2: Asset Class Breakdown -->
+    <div class="card table-card desktop-only">
+      <div class="card-head">
+        <h3>Table 2 — Asset Class &amp; Category Aggregated Breakdown</h3>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Asset Category</th>
+              <th class="right">Schemes</th>
+              <th class="right">Invested Capital</th>
+              <th class="right">Market Value</th>
+              <th class="right">Profit / Loss</th>
+              <th class="right">Return %</th>
+              <th class="right">Category Share %</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let c of data.headToHead.categories">
+              <td class="bold">{{ c.assetCategory }}</td>
+              <td class="right mono">{{ c.schemeCount }}</td>
+              <td class="right mono">₹{{ c.investedCapital | number:'1.2-2' }}</td>
+              <td class="right mono">₹{{ c.marketValue | number:'1.2-2' }}</td>
+              <td class="right mono" [class.pos]="c.profitLoss >= 0" [class.neg]="c.profitLoss < 0">
+                {{ c.profitLoss >= 0 ? '+' : '' }}₹{{ c.profitLoss | number:'1.2-2' }}
+              </td>
+              <td class="right mono bold" [class.pos]="c.returnPercent >= 0" [class.neg]="c.returnPercent < 0">
+                {{ c.returnPercent >= 0 ? '+' : '' }}{{ c.returnPercent | number:'1.2-2' }}%
+              </td>
+              <td class="right mono">{{ c.categorySharePercent | number:'1.2-2' }}%</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td>Total Asset Category Portfolio</td>
+              <td class="right mono">{{ data.headToHead.schemes.length }}</td>
+              <td class="right mono">₹{{ data.totalInvested | number:'1.2-2' }}</td>
+              <td class="right mono">₹{{ data.totalMarketValue | number:'1.2-2' }}</td>
+              <td class="right mono">{{ data.totalProfitLoss >= 0 ? '+' : '' }}₹{{ data.totalProfitLoss | number:'1.2-2' }}</td>
+              <td class="right mono">{{ data.overallReturnPercent >= 0 ? '+' : '' }}{{ data.overallReturnPercent | number:'1.2-2' }}%</td>
+              <td class="right mono">100.00%</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Mobile Cards: Head-to-Head -->
+    <div class="mobile-only m-cards">
+      <div class="m-card" *ngFor="let s of data.headToHead.schemes">
+        <div class="m-card-head">
+          <div>
+            <div class="m-title">{{ s.schemeName }}</div>
+            <div class="m-sub">{{ s.assetCategory }}</div>
+          </div>
+          <div class="m-badge-val mono" [class.pos]="s.returnPercent >= 0" [class.neg]="s.returnPercent < 0">
+            {{ s.returnPercent >= 0 ? '+' : '' }}{{ s.returnPercent | number:'1.2-2' }}%
+          </div>
+        </div>
+        <div class="m-grid">
+          <div class="m-kv">
+            <span>Invested</span>
+            <strong class="mono">₹{{ s.investedCapital | number:'1.0-0' }}</strong>
+          </div>
+          <div class="m-kv">
+            <span>Market Value</span>
+            <strong class="mono">₹{{ s.marketValue | number:'1.0-0' }}</strong>
+          </div>
+          <div class="m-kv">
+            <span>Profit / Loss</span>
+            <strong class="mono" [class.pos]="s.profitLoss >= 0" [class.neg]="s.profitLoss < 0">
+              {{ s.profitLoss >= 0 ? '+' : '' }}₹{{ s.profitLoss | number:'1.0-0' }}
+            </strong>
+          </div>
+          <div class="m-kv">
+            <span>Weight / Profit Share</span>
+            <strong class="mono">{{ s.portfolioWeightPercent | number:'1.1-1' }}% / {{ s.profitSharePercent | number:'1.1-1' }}%</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="m-card m-total">
+        <div class="m-card-head">
+          <div class="m-title">Asset Class Breakdown</div>
+          <div class="m-badge-val mono">{{ data.overallReturnPercent >= 0 ? '+' : '' }}{{ data.overallReturnPercent | number:'1.2-2' }}%</div>
+        </div>
+        <div class="m-cards">
+          <div class="m-kv" *ngFor="let c of data.headToHead.categories">
+            <span>{{ c.assetCategory }} ({{ c.schemeCount }}) · {{ c.categorySharePercent | number:'1.1-1' }}%</span>
+            <strong class="mono" [class.pos]="c.profitLoss >= 0" [class.neg]="c.profitLoss < 0">
+              ₹{{ c.investedCapital | number:'1.0-0' }} → ₹{{ c.marketValue | number:'1.0-0' }} ({{ c.returnPercent >= 0 ? '+' : '' }}{{ c.returnPercent | number:'1.2-2' }}%)
+            </strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ══ Month Orders Drill-Down Modal ═════════════════════════════════ -->
+<div class="modal-backdrop" *ngIf="drillModalOpen" (click)="closeDrillModal()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <div class="modal-head">
+      <h3>{{ drillTitle }}</h3>
+      <button type="button" class="modal-close" (click)="closeDrillModal()" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div *ngIf="drillLoading" class="drill-loading">Loading orders...</div>
+      <div *ngIf="!drillLoading && drillOrders.length === 0" class="drill-loading">No orders found.</div>
+      <div *ngIf="!drillLoading && drillOrders.length > 0" class="table-wrap desktop-only">
+        <table>
+          <thead>
+            <tr>
+              <th>Order #</th>
+              <th>Date</th>
+              <th>Investor</th>
+              <th>Folio</th>
+              <th class="right">Amount</th>
+              <th class="right">NAV</th>
+              <th class="right">Units</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let o of drillOrders">
+              <td class="mono">{{ o.orderNumber }}</td>
+              <td class="mono">{{ o.orderDate | slice:0:10 }}</td>
+              <td>{{ o.investorName }}</td>
+              <td class="mono">{{ o.folioNumber || '—' }}</td>
+              <td class="right mono bold">₹{{ o.investedAmount | number:'1.2-2' }}</td>
+              <td class="right mono">{{ o.purchaseNAV ? ('₹' + (o.purchaseNAV | number:'1.4-4')) : '—' }}</td>
+              <td class="right mono">{{ o.unitsAllotted ? (o.unitsAllotted | number:'1.4-4') : '—' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div *ngIf="!drillLoading && drillOrders.length > 0" class="mobile-only m-cards">
+        <div class="m-card" *ngFor="let o of drillOrders">
+          <div class="m-card-head">
+            <div>
+              <div class="m-title mono">{{ o.orderNumber }}</div>
+              <div class="m-sub">{{ o.orderDate | slice:0:10 }} · {{ o.investorName }}</div>
+            </div>
+            <div class="m-badge-val mono">₹{{ o.investedAmount | number:'1.2-2' }}</div>
+          </div>
+          <div class="m-grid">
+            <div class="m-kv">
+              <span>Folio</span>
+              <strong class="mono">{{ o.folioNumber || '—' }}</strong>
+            </div>
+            <div class="m-kv">
+              <span>NAV / Units</span>
+              <strong class="mono">{{ o.purchaseNAV ? ('₹' + (o.purchaseNAV | number:'1.2-2')) : '—' }} / {{ o.unitsAllotted ? (o.unitsAllotted | number:'1.3-3') : '—' }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
