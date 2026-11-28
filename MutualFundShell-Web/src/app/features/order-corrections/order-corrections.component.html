@@ -1,8 +1,13 @@
 <div class="corrections-page">
-  <div class="corrections-header">
-    <div>
-      <h1>Admin — Edit / Reverse Orders</h1>
-      <p>Safely edit order fields (including Scheme, Investor, Date, NAV, Units) or reverse incorrect orders with automatic Holding &amp; Snapshot sync.</p>
+  <div class="back-header">
+    <button class="back-btn" type="button" (click)="goToOrders()" aria-label="Go back to orders">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+    <div class="back-info">
+      <h2>Admin — Edit / Reverse Orders</h2>
+      <span class="back-sub">
+        Safely edit order fields (including Scheme, Investor, Date, NAV, Units) or reverse incorrect orders with automatic Holding &amp; Snapshot sync.
+      </span>
     </div>
   </div>
 
@@ -74,7 +79,7 @@
         </div>
       }
 
-      <div class="card table-wrap">
+      <div class="card table-wrap desktop-only">
         <table>
           <thead>
             <tr>
@@ -138,11 +143,69 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Mobile Cards: Active Orders -->
+      <div class="mobile-only m-cards">
+        @for (o of filteredOrders; track o.id) {
+          <div class="m-card" [class.selected]="isSelected(o.id)">
+            <div class="m-card-head">
+              <div class="m-head-left">
+                <input
+                  type="checkbox"
+                  [checked]="isSelected(o.id)"
+                  (change)="toggleRow(o.id, $any($event.target).checked)"
+                />
+                <div>
+                  <div class="m-title mono">{{ o.orderNumber }}</div>
+                  <div class="m-sub mono">{{ formatDate(o.orderDate) }}</div>
+                </div>
+              </div>
+              <span class="status-pill">{{ o.status }}</span>
+            </div>
+
+            <div class="m-scheme">{{ o.schemeName }}</div>
+
+            <div class="m-grid">
+              <div class="m-kv">
+                <span>Investor</span>
+                <strong>{{ o.investorName }}</strong>
+              </div>
+              <div class="m-kv">
+                <span>Folio</span>
+                <strong class="mono">{{ o.folioNumber || '—' }}</strong>
+              </div>
+              <div class="m-kv">
+                <span>Invested</span>
+                <strong class="mono">₹{{ o.investedAmount | number:'1.2-2' }}</strong>
+              </div>
+              <div class="m-kv">
+                <span>Purchase NAV</span>
+                <strong class="mono">{{ o.purchaseNAV != null ? (o.purchaseNAV | number:'1.4-4') : '—' }}</strong>
+              </div>
+              <div class="m-kv">
+                <span>Units</span>
+                <strong class="mono">{{ o.unitsAllotted != null ? (o.unitsAllotted | number:'1.4-4') : '—' }}</strong>
+              </div>
+            </div>
+
+            <div class="m-actions">
+              <button class="btn btn-outline btn-sm" type="button" (click)="openEditModal(o)">
+                <i class="fas fa-pen"></i> Edit
+              </button>
+              <button class="btn btn-danger-soft btn-sm" type="button" (click)="openSingleReverseModal(o)">
+                <i class="fas fa-trash-can"></i> Reverse
+              </button>
+            </div>
+          </div>
+        } @empty {
+          <div class="m-card empty-cell">No matching orders found.</div>
+        }
+      </div>
     }
 
     <!-- TAB 2: AUDIT LOG -->
     @if (activeTab === 'audit') {
-      <div class="card table-wrap">
+      <div class="card table-wrap desktop-only">
         @if (loadingLogs) {
           <app-loading-spinner message="Loading audit log..." />
         } @else {
@@ -180,6 +243,36 @@
           </table>
         }
       </div>
+
+      @if (!loadingLogs) {
+        <div class="mobile-only m-cards">
+          @for (log of auditLogs; track log.id) {
+            <div class="m-card">
+              <div class="m-card-head">
+                <div>
+                  <div class="m-title mono">{{ log.orderNumber }}</div>
+                  <div class="m-sub mono">{{ log.createdAt | date:'yyyy-MM-dd HH:mm' }} · {{ log.adminName }}</div>
+                </div>
+                <span class="status-pill" [class.reversed]="log.actionType === 'REVERSED'">
+                  {{ log.actionType }}
+                </span>
+              </div>
+              <div class="m-grid">
+                <div class="m-kv">
+                  <span>Change Summary</span>
+                  <strong>{{ log.changeSummary }}</strong>
+                </div>
+                <div class="m-kv">
+                  <span>Reason</span>
+                  <strong class="muted">{{ log.reason }}</strong>
+                </div>
+              </div>
+            </div>
+          } @empty {
+            <div class="m-card empty-cell">No order corrections or reversals recorded yet.</div>
+          }
+        </div>
+      }
     }
   }
 </div>

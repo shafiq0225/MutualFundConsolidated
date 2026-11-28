@@ -67,7 +67,7 @@
         </button>
       </div>
 
-      <div class="card table-wrap">
+      <div class="card table-wrap desktop-only">
         <table>
           <thead>
             <tr>
@@ -147,6 +147,82 @@
             }
           </tbody>
         </table>
+      </div>
+
+      <!-- Mobile Cards: Audit Scanner -->
+      <div class="mobile-only m-cards">
+        @for (item of filteredItems; track item.orderId) {
+          <div class="m-card">
+            <div class="m-card-head">
+              <div>
+                <div class="m-title mono">{{ item.orderNumber }}</div>
+                <div class="m-sub mono">{{ formatDate(item.orderDate) }}</div>
+              </div>
+              <span
+                class="sev-pill"
+                [class.sev-critical]="item.severity === 'Critical'"
+                [class.sev-warning]="item.severity === 'Warning'"
+                [class.sev-ok]="item.severity === 'OK'"
+                [class.sev-nodata]="item.severity === 'NoAmfiData'"
+              >
+                {{ item.severity }}
+              </span>
+            </div>
+
+            <div class="m-scheme">{{ item.schemeName }}</div>
+
+            <div class="m-grid">
+              <div class="m-kv">
+                <span>Invested</span>
+                <strong class="mono">₹{{ item.investedAmount | number:'1.2-2' }}</strong>
+              </div>
+              <div class="m-kv">
+                <span>Entered NAV</span>
+                <strong class="mono">{{ item.enteredNav | number:'1.4-4' }}</strong>
+              </div>
+              <div class="m-kv">
+                <span>AMFI NAV</span>
+                <strong class="mono">
+                  @if (item.amfiNav != null) {
+                    {{ item.amfiNav | number:'1.4-4' }} ({{ formatDate(item.amfiNavDate) }})
+                  } @else {
+                    —
+                  }
+                </strong>
+              </div>
+              <div class="m-kv">
+                <span>Variance</span>
+                <strong class="mono" [class.text-danger]="item.severity === 'Critical'" [class.text-ok]="item.severity === 'OK'">
+                  @if (item.variancePercent != null) {
+                    {{ item.variancePercent >= 0 ? '+' : '' }}{{ item.variancePercent | number:'1.2-2' }}%
+                  } @else {
+                    —
+                  }
+                </strong>
+              </div>
+              <div class="m-kv">
+                <span>Entered Units</span>
+                <strong class="mono">{{ item.enteredUnits | number:'1.4-4' }}</strong>
+              </div>
+              <div class="m-kv">
+                <span>Expected Units</span>
+                <strong class="mono">{{ item.expectedUnits != null ? (item.expectedUnits | number:'1.4-4') : '—' }}</strong>
+              </div>
+            </div>
+
+            <div class="m-finding">{{ item.finding }}</div>
+
+            @if (auth.isAdmin() && (item.severity === 'Critical' || item.severity === 'Warning')) {
+              <div class="m-actions">
+                <button class="btn btn-outline btn-sm" type="button" (click)="fixInOrderCorrections(item.orderNumber)">
+                  <i class="fas fa-wrench"></i> Fix Order
+                </button>
+              </div>
+            }
+          </div>
+        } @empty {
+          <div class="m-card empty-cell">No matching orders found.</div>
+        }
       </div>
     }
 

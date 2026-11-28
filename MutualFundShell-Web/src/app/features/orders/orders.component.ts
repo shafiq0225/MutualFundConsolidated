@@ -86,6 +86,10 @@ export class OrdersComponent implements OnInit {
     this.router.navigate(['/bulk-import']);
   }
 
+  goToOrderCorrections(): void {
+    this.router.navigate(['/order-corrections']);
+  }
+
   ngOnInit(): void {
     this.initForm();
     this.loadAll();

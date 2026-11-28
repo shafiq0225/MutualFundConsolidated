@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { forkJoin } from 'rxjs';
 
@@ -66,8 +66,13 @@ export class OrderCorrectionsComponent implements OnInit {
     private authUserService: AuthUserService,
     private fb: FormBuilder,
     private route: ActivatedRoute,
+    private router: Router,
     private toastr: ToastrService
   ) {}
+
+  goToOrders(): void {
+    this.router.navigate(['/orders']);
+  }
 
   ngOnInit(): void {
     const initialSearch = this.route.snapshot.queryParamMap.get('search');
